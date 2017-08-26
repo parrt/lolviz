@@ -138,13 +138,3 @@ def idx_elviz(idx, el, showassoc):
           </tr>
         </table>
         """ % (idx, elviz(el,showassoc))
-
-x = [ None, [('a','3')], [], None, [('b',230), ('c',21)] ]
-x = [('the',4), ('cat',1), ('sat',1), ('hat',1)]
-x = [('a',4),[2],"hi",99]
-# x = {'the':4, 'hi':{'foo':{3,4}}}
-# x = [ [], [], [], [], [], [{}] ]
-x = [ [('ronald',{9,3}),('reagan',{17})], [], [], [], [] ]
-x = ["hi", 99, 3.4]
-dot = lolviz(x, showassoc=True)
-dot.render(view=True)
