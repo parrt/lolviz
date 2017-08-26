@@ -4,12 +4,9 @@ A simple Python data-structure visualization tool for lists of lists, lists, dic
 
 There are currently three functions of interest that return `graphviz.files.Source` objects:
 
-* `dictviz()`: A dictionary visualization<br>
-<img src=images/dict.png width=50>
-* `listviz()`: Horizontal list visualization<br>
-<img src=images/list2.png width=300>
-* `lolviz()`: List of lists visualization with the first list vertical and the nested lists horizontal.<br>
-<img src=images/lol2.png width=400>
+* `dictviz()`: A dictionary visualization<br><img src=images/dict.png width=50>
+* `listviz()`: Horizontal list visualization<br><img src=images/list2.png width=300>
+* `lolviz()`: List of lists visualization with the first list vertical and the nested lists horizontal.<br><img src=images/lol2.png width=400>
 
 ## Installation
 
