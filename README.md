@@ -28,4 +28,12 @@ g.render(view=True) # render graphviz.files.Source object
 
 From within Jupyter notebooks you can avoid the `render()` call because Jupyter knows how to display `graphviz.files.Source` objects:
 
-<img src=images/jupyter.png width=700>
+<img src=images/jupyter.png width=600>
+
+You can look at a list of tuples as a list of list too:
+
+<img src=images/lol3.png width=230>
+
+Here's how to describe a hashtable with 3 elements in 2 different buckets:
+
+<img src=images/hashtable.png width=350>
