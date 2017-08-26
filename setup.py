@@ -7,6 +7,6 @@ setup(
     url='https://github.com/parrt/lolviz',
     license='BSD',
     author='Terence Parr',
-    author_email='parrt@cs.usfca.edu',
+    author_email='parrt@antlr.org',
     description='A simple Python data-structure visualization tool for lists of lists, lists, dictionaries'
 )
