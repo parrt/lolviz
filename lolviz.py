@@ -7,7 +7,7 @@ import graphviz
 
 def dictviz(d):
     """
-    Display a dictionary with the key/value pairs in a vertical list
+    Display a dictionary with the key/value pairs in a vertical list.
     """
     s = """
     digraph G {
@@ -24,6 +24,10 @@ def dictviz(d):
 
 
 def listviz(elems, showassoc=True):
+    """
+    Display a list of elements in a horizontal fashion.
+    If showassoc, then 2-tuples (3,4) are shown as 3->4.
+    """
     s = """
     digraph G {
         nodesep=.05;
@@ -74,10 +78,6 @@ def lolviz(table, showassoc=True):
     # Make outer list as vertical
     labels = []
     for i in range(len(table)):
-        # if (type(bucket)==list or type(bucket)==tuple) and len(bucket) == 0:
-        #     labels.append(str(i))
-        # else:
-        #     labels.append("<f%d> %d" % (i, i))
         labels.append("<f%d> %d" % (i, i))
 
     s += '    mainlist [color="#444443", fontsize="9", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="#D9E6F5", label = "'+'|'.join(labels)+'"];\n'
@@ -104,8 +104,6 @@ def lolviz(table, showassoc=True):
         bucket = table[i]
         if bucket==None:
             continue
-        # if not bucket or ((type(bucket)==list or type(bucket)==tuple) and len(bucket)==0):
-        #     continue
         s += 'mainlist:f%d -> node%d [penwidth="0.5", color="#444443", arrowsize=.4]\n' % (i,i)
     s += "}\n"
     # print s
