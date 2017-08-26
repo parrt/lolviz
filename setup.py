@@ -4,6 +4,7 @@ setup(
     name='lolviz',
     version='1.0',
     packages=['lolviz']
+    install_requires=['graphviz']
     url='https://github.com/parrt/lolviz',
     license='BSD',
     author='Terence Parr',
