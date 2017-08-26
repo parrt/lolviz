@@ -2,9 +2,10 @@ from setuptools import setup
 
 setup(
     name='lolviz',
-    version='1.0.1',
+    version='1.0.2',
     url='https://github.com/parrt/lolviz',
     license='BSD',
+    py_modules=['lolviz'],
     author='Terence Parr',
     author_email='parrt@antlr.org',
     install_requires=['graphviz'],
