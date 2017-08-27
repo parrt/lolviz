@@ -37,3 +37,13 @@ You can look at a list of tuples as a list of list too:
 Here's how to describe a hashtable with 3 elements in 2 different buckets:
 
 <img src=images/hashtable.png width=350>
+
+If you want the graphviz/dot source, use `source` field of returned `graphviz.files.Source` object.
+
+For 1.1, I added linked lists. Figuring out that layout was annoying. You're welcome. ;)
+
+<img src="images/llist.png" width=500>
+
+Here's an example of specifying lambda functions to extract values from nodes:
+
+<img src="images/tuplellist.png" width=450>
