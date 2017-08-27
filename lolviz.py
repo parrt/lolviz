@@ -185,7 +185,7 @@ def label_elviz(label, el, showassoc, port=None):
         """ % (label, port, elviz(el,showassoc))
 
 
-def llist_nodeviz(nodevalue, value, next):
+def llist_nodeviz(nodevalue, valuefield, nextfield):
     return \
         """
         <table BORDER="0" CELLBORDER="1" CELLSPACING="0">
@@ -198,7 +198,7 @@ def llist_nodeviz(nodevalue, value, next):
             <td port="next" bgcolor="#FBFEB0" border="0" align="center"><font point-size="11">%s</font></td>
           </tr>
         </table>
-        """ % (value,next, elviz(nodevalue,True), ' ')
+        """ % (valuefield, nextfield, elviz(nodevalue, True), ' ')
 
 
 def idx_elviz(idx, el, showassoc):
