@@ -17,7 +17,7 @@ def dictviz(d):
     """
     labels = []
     for key,value in d.items():
-        labels.append("%s&rarr;%s" % (repr(key),elviz(value,True)))
+        labels.append("%s&rarr;%s" % (repr(key),elviz(value,False)))
     s += '    mainlist [color="#444443", fontsize="9", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="#FBFEB0", label = "'+'|'.join(labels)+'"];\n'
     s += '}\n'
     return graphviz.Source(s)
@@ -157,7 +157,7 @@ def elviz(el, showassoc):
     if el is None:
         els = ' '
     elif showassoc and type(el) == tuple and len(el) == 2:
-        els = "%s&rarr;%s" % (elviz(el[0], showassoc), elviz(el[1], showassoc))
+        els = "%s&rarr;%s" % (elviz(el[0], showassoc), elviz(el[1], False))
     elif type(el)==set:
         els = '{'+', '.join([elviz(e, showassoc) for e in el])+'}'
     elif type(el) == dict:
@@ -226,4 +226,5 @@ if __name__ == '__main__':
     g = llistviz(head, valuefield='value', nextfield='next')
     # or
     g = llistviz(head, value=lambda p:p.value, next=lambda p:p.next)
+    g = listviz([(3,(1, 2))])
     g.render(view=True)
