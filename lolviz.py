@@ -17,7 +17,7 @@ def dictviz(d):
     """
     labels = []
     for key,value in d.items():
-        labels.append("%s&rarr;%s" % (repr(key),elviz(value,True)))
+        labels.append("%s&rarr;%s" % (repr(key),elviz(value,False)))
     s += '    mainlist [color="#444443", fontsize="9", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="#FBFEB0", label = "'+'|'.join(labels)+'"];\n'
     s += '}\n'
     return graphviz.Source(s)
@@ -92,6 +92,58 @@ def llistviz(head,
     return graphviz.Source(s)
 
 
+def treeviz(root,
+            valuefield='value', leftfield='left', rightfield='right',
+            value=None, left=None, right=None): # lambda/functions to obtain value/left/right fields
+
+    if value is None:
+        value = lambda p : getattr(p,valuefield)
+    if left is None:
+        left = lambda p : getattr(p,leftfield)
+    if right is None:
+        right = lambda p : getattr(p,rightfield)
+    s = """
+    digraph G {
+        nodesep=.2;
+        ranksep=.2;
+        node [shape=box, penwidth="0.5",width=.1,height=.1];
+
+"""
+
+    nodes = []
+    edges = []
+    def walk(t,i):
+        "Walk recursively to make a list of node definitions. Return the next node number"
+        if t is None: return i
+        html = tree_nodeviz(value(t), leftfield, rightfield)
+        nodes.append('    node%d [space="0.0", margin="0.01", fontcolor="#444443", fontname="Helvetica", label=<%s>];\n' % (i, html))
+        ti = i
+        i += 1
+        lefti = i
+        i = walk(left(t), i)
+        righti = i
+        i = walk(right(t), i)
+        if left(t):
+            edges.append( (ti,'left',lefti) )
+        if right(t):
+            edges.append( (ti,'right',righti) )
+        return i
+
+    walk(root,0)
+    s += '\n'.join(nodes)
+
+    # draw edges
+    for e in edges:
+        if e[2]=='left':
+            s += '    node%d:%s:n -> node%d [dir=both, tailclip=false, arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % e
+        else:
+            s += '    node%d:%s:n -> node%d [dir=both, tailclip=false, arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % e
+
+    s += "}\n"
+    # print s
+    return graphviz.Source(s)
+
+
 def lolviz(table, showassoc=True):
     """
     Given a list of lists such as:
@@ -157,7 +209,7 @@ def elviz(el, showassoc):
     if el is None:
         els = ' '
     elif showassoc and type(el) == tuple and len(el) == 2:
-        els = "%s&rarr;%s" % (elviz(el[0], showassoc), elviz(el[1], showassoc))
+        els = "%s&rarr;%s" % (elviz(el[0], showassoc), elviz(el[1], False))
     elif type(el)==set:
         els = '{'+', '.join([elviz(e, showassoc) for e in el])+'}'
     elif type(el) == dict:
@@ -191,14 +243,33 @@ def llist_nodeviz(nodevalue, valuefield, nextfield):
         <table BORDER="0" CELLBORDER="1" CELLSPACING="0">
           <tr>
             <td cellspacing="0" bgcolor="#FBFEB0" border="1" sides="br" valign="top"><font color="#444443" point-size="9">%s</font></td>
-            <td cellspacing="0" bgcolor="#FBFEB0" border="1" sides="b" valign="top"><font color="#444443" point-size="9">%s</font></td>
+            <td cellspacing="0" bgcolor="#D9E6F5" border="1" sides="b" valign="top"><font color="#444443" point-size="9">%s</font></td>
           </tr>
           <tr>
             <td port="value" bgcolor="#FBFEB0" border="1" sides="r" align="center"><font point-size="11">%s</font></td>
-            <td port="next" bgcolor="#FBFEB0" border="0" align="center"><font point-size="11">%s</font></td>
+            <td port="next" bgcolor="#D9E6F5" border="0" align="center"><font point-size="11">%s</font></td>
           </tr>
         </table>
         """ % (valuefield, nextfield, elviz(nodevalue, True), ' ')
+
+
+def tree_nodeviz(nodevalue, leftfield, rightfield):
+    return \
+        """
+    <table BORDER="0" CELLBORDER="1" CELLSPACING="0" fixedsize="TRUE">
+      <tr>
+        <td colspan="2" cellspacing="0" bgcolor="#FBFEB0" border="1" sides="b" valign="top"><font color="#444443" point-size="11">%s</font></td>
+      </tr>
+      <tr>
+        <td cellspacing="0" cellpadding="1" bgcolor="#D9E6F5" border="1" sides="r" valign="top"><font color="#444443" point-size="7">%s</font></td>
+        <td cellspacing="0" bgcolor="#D9E6F5" border="0" valign="top"><font color="#444443" point-size="7">%s</font></td>
+      </tr>
+      <tr>
+        <td port="left" bgcolor="#D9E6F5" border="1" sides="r" align="center"></td>
+        <td port="right" bgcolor="#D9E6F5" border="0" align="center"></td>
+      </tr>
+    </table>
+        """ % (elviz(nodevalue, True), leftfield, rightfield)
 
 
 def idx_elviz(idx, el, showassoc):
@@ -218,12 +289,18 @@ if __name__ == '__main__':
             self.value = value
             self.next = next
 
+    class Tree:
+        def __init__(self, value, left=None, right=None):
+            self.value = value
+            self.left = left
+            self.right = right
+
     head = Node('tombu')
     head = Node('parrt', head)
-    head = Node({3,4}, head)
     g = llistviz(head)
     # or
     g = llistviz(head, valuefield='value', nextfield='next')
     # or
-    g = llistviz(head, value=lambda p:p.value, next=lambda p:p.next)
+    # g = lolviz([[3,4]])
+    g = treeviz(Tree('parrt',Tree('mary'),Tree('jim')))
     g.render(view=True)
