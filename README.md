@@ -49,3 +49,33 @@ For 1.1, I added linked lists. Figuring out that layout was annoying. You're wel
 Here's an example of specifying lambda functions to extract values from nodes:
 
 <img src="images/tuplellist.png" width=450>
+
+Here's an example for binary trees:
+
+```python
+class Tree:
+    def __init__(self, value, left=None, right=None):
+        self.value = value
+        self.left = left
+        self.right = right
+
+root = Tree('parrt',
+            Tree('mary',
+                 Tree('jim',
+                      Tree('srinivasan'),
+                      Tree('april'))),
+            Tree('xue',None,Tree('mike')))
+treeviz(root)
+```
+
+<img src="images/tree2.png" width=190>
+
+And another:
+
+```python
+root = ('parrt',('mary',('srinivasan',None,None),('april',None,None)),None)
+treeviz(root, value=lambda t:t[0], left=lambda t:t[1], right=lambda t:t[2])
+```
+
+<img src="images/tree3.png" width=140>
+
