@@ -11,8 +11,6 @@ setup(
     install_requires=['graphviz'],
     description='A simple Python data-structure visualization tool for lists of lists, lists, dictionaries',
     keywords='visualization data structures',
-    python_requires='<3',
-    classifiers=['Programming Language :: Python :: 2.7',
-                 'License :: OSI Approved :: BSD License',
+    classifiers=['License :: OSI Approved :: BSD License',
                  'Intended Audience :: Developers']
 )
