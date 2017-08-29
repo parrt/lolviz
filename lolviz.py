@@ -14,28 +14,37 @@ def varviz(varnames, showassoc=False):
         node [penwidth="0.5", shape=record,width=.1,height=.1];
     """
 
-    caller = inspect.stack()[1]
+    stack = inspect.stack()
+    caller = stack[1]
+    caller_scopename = caller[3]
+    if caller_scopename=='<module>':
+        caller_scopename = 'globals'
     scope = caller[0].f_locals
 
     # Show scope dictionary
     values = []
     for name in varnames:
-        if type(scope[name])==list:
+        v = scope[name]
+        if type(v)==list or type(v)==tuple or type(v)==dict:
             values.append(None)
         else:
-            values.append(elviz(scope[name], showassoc))
+            values.append(elviz(v, showassoc))
 
-    html = scopetable_viz(varnames, values)
+    html = scopetable_html(caller_scopename, varnames, values)
     s += '    vars [shape="box", color="#444443", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="#D9E6F5", label = <%s>];\n' % html
 
     # Show data structures in the heap
     for name in varnames:
-        if type(scope[name])==list:
-            s += list_node(scope[name], True)
+        v = scope[name]
+        if type(v)==list or type(v)==tuple:
+            s += list_node(v, True)
+        if type(v)==dict:
+            s += dict_node(v)
 
     # Draw edges to objects in the heap
     for name in varnames:
-        if type(scope[name])==list:
+        v = scope[name]
+        if type(v)==list or type(v)==tuple or type(v)==dict:
             s += 'vars:%s:c -> node%d [dir=both, tailclip=false, arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (name,id(scope[name]))
 
     s += '}\n'
@@ -50,12 +59,9 @@ def dictviz(d):
     digraph G {
         nodesep=.05;
         rankdir=LR;
-        node [penwidth="0.5", shape=record,width=.1,height=.1];
+        node [penwidth="0.5",shape=box,width=.1,height=.1];
     """
-    labels = []
-    for key,value in d.items():
-        labels.append("%s&rarr;%s" % (repr(key),elviz(value,False)))
-    s += '    mainlist [color="#444443", fontsize="9", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="#FBFEB0", label = "'+'|'.join(labels)+'"];\n'
+    s += dict_node(d)
     s += '}\n'
     return graphviz.Source(s)
 
@@ -311,21 +317,25 @@ def llist_nodeviz(nodevalue, valuefield, nextfield):
         """ % (valuefield, nextfield, elviz(nodevalue, True), ' ')
 
 
-def scopetable_viz(names, values):
+def scopetable_html(scopename, names, values):
     header = \
         """
         <table BORDER="0" CELLBORDER="1" CELLSPACING="0">
         """
 
     blankrow = '<tr><td border="0"></td></tr>'
+
+    scope = '<tr><td cellspacing="0" colspan="2" cellpadding="0" bgcolor="#D9E6F5" border="0" align="center"><font color="#444443" FACE="Times-Italic" point-size="11"><i>%s</i></font></td></tr>\n' % scopename
+
     rows = []
+    rows.append(scope)
     for i in range(len(names)):
-        name = '<td cellspacing="0" cellpadding="0" bgcolor="#D9E6F5" border="1" sides="r" valign="top" align="right"><font color="#444443" point-size="11">%s </font></td>\n' % names[i]
+        name = '<td cellspacing="0" cellpadding="0" bgcolor="#D9E6F5" border="1" sides="r" align="right"><font color="#444443" point-size="11">%s </font></td>\n' % names[i]
         if values[i] is not None:
             v = values[i]
         else:
             v = ""
-        value = '<td port="%s" cellspacing="0" cellpadding="1" bgcolor="#D9E6F5" border="0" valign="top" align="left"><font color="#444443" point-size="11"> %s</font></td>\n' % (names[i],v)
+        value = '<td port="%s" cellspacing="0" cellpadding="1" bgcolor="#D9E6F5" border="0" align="left"><font color="#444443" point-size="11"> %s</font></td>\n' % (names[i],v)
         row = '<tr>' + name + value + '</tr>\n'
         rows.append(row)
 
@@ -334,6 +344,30 @@ def scopetable_viz(names, values):
         </table>
         """
     return header + blankrow.join(rows) + tail
+
+
+def dict_node(d):
+    html = dict_html(d)
+    return '    node%d [color="#444443", fontsize="9", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="#FBFEB0", label=<%s>];\n' % (id(d),html)
+
+
+def dict_html(d):
+    header = \
+        """
+        <table BORDER="0" CELLBORDER="1" CELLSPACING="0">
+        """
+    rows = []
+    for key,value in d.items():
+        pair = "%s&rarr;%s" % (repr(key),elviz(value,False))
+        html = '<td port="%s" cellspacing="0" cellpadding="0" bgcolor="#FBFEB0" border="0" valign="top" align="left"><font color="#444443" point-size="11">%s</font></td>\n' % (key,pair)
+        row = '<tr>\n' + html + '</tr>\n'
+        rows.append(row)
+
+    tail = \
+        """
+        </table>
+        """
+    return header + ''.join(rows) + tail
 
 
 def tree_nodeviz(nodevalue, leftfield, rightfield):
@@ -363,8 +397,10 @@ if __name__ == '__main__':
     i = 3
     name = 'parrt'
     s = [3, 9, 10]
-    t = [1,2,3]
+    t = {'a':999, 'b':1}
     g = varviz(['i','name', 's', 't'])
     # g = lolviz([[2],[3,4]])
+    # g = dictviz(t)
+    # g = listviz('parrt')
     print g.source
     g.render(view=True)
