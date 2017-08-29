@@ -302,5 +302,5 @@ if __name__ == '__main__':
     g = llistviz(head, valuefield='value', nextfield='next')
     # or
     # g = lolviz([[3,4]])
-    g = treeviz(Tree('parrt',Tree('mary',Tree('jim',Tree('srinivasan'),Tree('april'))),Tree('xue',None,Tree('mike'))))
+    g = treeviz(Tree('parrt',Tree('mary'),Tree('jim')))
     g.render(view=True)
