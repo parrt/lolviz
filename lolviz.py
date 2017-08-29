@@ -290,12 +290,6 @@ if __name__ == '__main__':
             self.next = next
 
     class Tree:
-        def __str__(self):
-            return "(%s,%s,%s)" % (self.value, str(self.left), str(self.right))
-
-        def __repr__(self):
-            return str(self)
-
         def __init__(self, value, left=None, right=None):
             self.value = value
             self.left = left
