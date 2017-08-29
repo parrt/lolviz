@@ -4,6 +4,43 @@ and lists of lists in a reasonable manner using graphviz.
 Inspired by the object connectivity graphs in Pythontutor.com
 """
 import graphviz
+import inspect
+
+def varviz(varnames, showassoc=False):
+    s = """
+    digraph G {
+        nodesep=.05;
+        rankdir=LR;
+        node [penwidth="0.5", shape=record,width=.1,height=.1];
+    """
+
+    caller = inspect.stack()[1]
+    scope = caller[0].f_locals
+
+    # Show scope dictionary
+    values = []
+    for name in varnames:
+        if type(scope[name])==list:
+            values.append(None)
+        else:
+            values.append(elviz(scope[name], showassoc))
+
+    html = scopetable_viz(varnames, values)
+    s += '    vars [shape="box", color="#444443", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="#D9E6F5", label = <%s>];\n' % html
+
+    # Show data structures in the heap
+    for name in varnames:
+        if type(scope[name])==list:
+            s += list_node(scope[name], True)
+
+    # Draw edges to objects in the heap
+    for name in varnames:
+        if type(scope[name])==list:
+            s += 'vars:%s:c -> node%d [dir=both, tailclip=false, arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (name,id(scope[name]))
+
+    s += '}\n'
+    return graphviz.Source(s)
+
 
 def dictviz(d):
     """
@@ -23,7 +60,6 @@ def dictviz(d):
     return graphviz.Source(s)
 
 
-
 def listviz(elems, showassoc=True):
     """
     Display a list of elements in a horizontal fashion.
@@ -37,14 +73,7 @@ def listviz(elems, showassoc=True):
     if type(elems)==dict:
         return dictviz(elems)
 
-    labels = []
-    for i in range(len(elems)):
-        el = elems[i]
-        if not el:
-            labels.append(str(i))
-        else:
-            labels.append(idx_elviz(i,el,showassoc))
-    s += '    mainlist [space="0.0", margin="0.01", fontcolor="#444443", fontname="Helvetica", label=<'+'|'.join(labels)+'>];\n'
+    s += list_node(elems, showassoc)
 
     s += "}\n"
     return graphviz.Source(s)
@@ -184,14 +213,12 @@ def lolviz(table, showassoc=True):
             continue
         elements = []
         if (type(bucket)==list or type(bucket)==tuple) and len(bucket) == 0:
-            s += 'node%d [margin="0.03", fontname="Italics", shape=none label=<<font color="#444443" point-size="9">empty list</font>>];\n' % i
+            s += 'node%d [margin="0.03", fontname="Italics", shape=none label=<<font color="#444443" point-size="9">empty list</font>>];\n' % id(bucket)
+        elif type(bucket)==list or type(bucket)==tuple and len(bucket)>0:
+            s += list_node(bucket, showassoc)
+            # s += 'node%d [color="#444443", fontname="Helvetica", margin="0.01", space="0.0", shape=record label=<{%s}>];\n' % (i, '|'.join(elements))
         else:
-            if type(bucket)==list or type(bucket)==tuple:
-                if len(bucket)>0:
-                    for j, el in enumerate(bucket):
-                        elements.append(idx_elviz(j, el, showassoc))
-            else:
-                elements.append(elviz(bucket, showassoc))
+            elements.append(elviz(bucket, showassoc))
             s += 'node%d [color="#444443", fontname="Helvetica", margin="0.01", space="0.0", shape=record label=<{%s}>];\n' % (i, '|'.join(elements))
 
     # Do edges
@@ -199,7 +226,7 @@ def lolviz(table, showassoc=True):
         bucket = table[i]
         if bucket==None:
             continue
-        s += 'mainlist:f%d -> node%d [penwidth="0.5", color="#444443", arrowsize=.4]\n' % (i,i)
+        s += 'mainlist:f%d -> node%d [penwidth="0.5", color="#444443", arrowsize=.4]\n' % (i,id(bucket))
     s += "}\n"
     # print s
     return graphviz.Source(s)
@@ -237,6 +264,37 @@ def label_elviz(label, el, showassoc, port=None):
         """ % (label, port, elviz(el,showassoc))
 
 
+def list_node(elems, showassoc):
+    html = listtable_html(elems, showassoc)
+    return '    node%d [shape="box", space="0.0", margin="0.01", fontcolor="#444443", fontname="Helvetica", label=<%s>];\n' % (id(elems),html)
+
+
+def listtable_html(values, showassoc):
+    header = \
+        """
+        <table BORDER="0" CELLBORDER="0" CELLSPACING="0">
+        """
+
+    index_html = '<td cellspacing="0" bgcolor="#FBFEB0" border="1" sides="br" valign="top"><font color="#444443" point-size="9">%d</font></td>\n'
+    value_html = '<td port="%d" bgcolor="#FBFEB0" border="1" sides="r" align="center"><font point-size="11">%s</font></td>\n'
+    # don't want right border to show on last.
+    last_index_html = '<td cellspacing="0" bgcolor="#FBFEB0" border="1" sides="b" valign="top"><font color="#444443" point-size="9">%d</font></td>\n'
+    last_value_html = '<td port="%d" bgcolor="#FBFEB0" border="0" align="center"><font point-size="11">%s</font></td>\n'
+
+    lastindex = len(values) - 1
+    toprow = [index_html % i for i in range(lastindex)]
+    bottomrow = [value_html % (i,elviz(values[i],showassoc)) for i in range(lastindex)]
+
+    toprow.append(last_index_html % (lastindex))
+    bottomrow.append(last_value_html % (lastindex, elviz(values[lastindex], showassoc)))
+
+    tail = \
+        """
+        </table>
+        """
+    return header + '<tr>\n'+''.join(toprow)+'</tr>\n' + '<tr>\n'+''.join(bottomrow)+'</tr>' + tail
+
+
 def llist_nodeviz(nodevalue, valuefield, nextfield):
     return \
         """
@@ -251,6 +309,31 @@ def llist_nodeviz(nodevalue, valuefield, nextfield):
           </tr>
         </table>
         """ % (valuefield, nextfield, elviz(nodevalue, True), ' ')
+
+
+def scopetable_viz(names, values):
+    header = \
+        """
+        <table BORDER="0" CELLBORDER="1" CELLSPACING="0">
+        """
+
+    blankrow = '<tr><td border="0"></td></tr>'
+    rows = []
+    for i in range(len(names)):
+        name = '<td cellspacing="0" cellpadding="0" bgcolor="#D9E6F5" border="1" sides="r" valign="top" align="right"><font color="#444443" point-size="11">%s </font></td>\n' % names[i]
+        if values[i] is not None:
+            v = values[i]
+        else:
+            v = ""
+        value = '<td port="%s" cellspacing="0" cellpadding="1" bgcolor="#D9E6F5" border="0" valign="top" align="left"><font color="#444443" point-size="11"> %s</font></td>\n' % (names[i],v)
+        row = '<tr>' + name + value + '</tr>\n'
+        rows.append(row)
+
+    tail = \
+        """
+        </table>
+        """
+    return header + blankrow.join(rows) + tail
 
 
 def tree_nodeviz(nodevalue, leftfield, rightfield):
@@ -277,30 +360,11 @@ def idx_elviz(idx, el, showassoc):
 
 
 if __name__ == '__main__':
-    # test linked list node
-    class Node:
-        def __str__(self):
-            return "(%s,%s)" % (self.value, str(self.next))
-
-        def __repr__(self):
-            return str(self)
-
-        def __init__(self, value, next=None):
-            self.value = value
-            self.next = next
-
-    class Tree:
-        def __init__(self, value, left=None, right=None):
-            self.value = value
-            self.left = left
-            self.right = right
-
-    head = Node('tombu')
-    head = Node('parrt', head)
-    g = llistviz(head)
-    # or
-    g = llistviz(head, valuefield='value', nextfield='next')
-    # or
-    # g = lolviz([[3,4]])
-    g = treeviz(Tree('parrt',Tree('mary'),Tree('jim')))
+    i = 3
+    name = 'parrt'
+    s = [3, 9, 10]
+    t = [1,2,3]
+    g = varviz(['i','name', 's', 't'])
+    # g = lolviz([[2],[3,4]])
+    print g.source
     g.render(view=True)
