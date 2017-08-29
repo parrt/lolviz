@@ -6,6 +6,20 @@ Inspired by the object connectivity graphs in Pythontutor.com
 import graphviz
 import inspect
 
+def strviz(str):
+    s = """
+    digraph G {
+        nodesep=.05;
+        rankdir=LR;
+        node [penwidth="0.5", shape=record,width=.1,height=.1];
+    """
+
+    s += string_node(str)
+
+    s += '}\n'
+    return graphviz.Source(s)
+
+
 def varviz(varnames, showassoc=False):
     s = """
     digraph G {
@@ -25,7 +39,7 @@ def varviz(varnames, showassoc=False):
     values = []
     for name in varnames:
         v = scope[name]
-        if type(v)==list or type(v)==tuple or type(v)==dict:
+        if type(v)==list or type(v)==tuple or type(v)==dict or type(v)==str:
             values.append(None)
         else:
             values.append(elviz(v, showassoc))
@@ -40,11 +54,13 @@ def varviz(varnames, showassoc=False):
             s += list_node(v, True)
         if type(v)==dict:
             s += dict_node(v)
+        if type(v)==str:
+            s += string_node(v)
 
     # Draw edges to objects in the heap
     for name in varnames:
         v = scope[name]
-        if type(v)==list or type(v)==tuple or type(v)==dict:
+        if type(v)==list or type(v)==tuple or type(v)==dict or type(v)==str:
             s += 'vars:%s:c -> node%d [dir=both, tailclip=false, arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (name,id(scope[name]))
 
     s += '}\n'
@@ -111,7 +127,7 @@ def llistviz(head,
     i = 0
     edges = []
     while p is not None:
-        html = llist_nodeviz(value(p), valuefield, nextfield)
+        html = llistnode_html(value(p), valuefield, nextfield)
         if next(p) is not None:
             edges.append( (i,i+1) )
         p = next(p)
@@ -150,7 +166,7 @@ def treeviz(root,
     def walk(t,i):
         "Walk recursively to make a list of node definitions. Return the next node number"
         if t is None: return i
-        html = tree_nodeviz(value(t), leftfield, rightfield)
+        html = treenode_html(value(t), leftfield, rightfield)
         nodes.append('    node%d [space="0.0", margin="0.01", fontcolor="#444443", fontname="Helvetica", label=<%s>];\n' % (i, html))
         ti = i
         i += 1
@@ -301,7 +317,7 @@ def listtable_html(values, showassoc):
     return header + '<tr>\n'+''.join(toprow)+'</tr>\n' + '<tr>\n'+''.join(bottomrow)+'</tr>' + tail
 
 
-def llist_nodeviz(nodevalue, valuefield, nextfield):
+def llistnode_html(nodevalue, valuefield, nextfield):
     return \
         """
         <table BORDER="0" CELLBORDER="1" CELLSPACING="0">
@@ -370,7 +386,7 @@ def dict_html(d):
     return header + ''.join(rows) + tail
 
 
-def tree_nodeviz(nodevalue, leftfield, rightfield):
+def treenode_html(nodevalue, leftfield, rightfield):
     return \
         """
     <table BORDER="0" CELLBORDER="1" CELLSPACING="0" fixedsize="TRUE">
@@ -389,16 +405,50 @@ def tree_nodeviz(nodevalue, leftfield, rightfield):
         """ % (elviz(nodevalue, True), leftfield, rightfield)
 
 
+def string_node(s):
+    html = string_html(s)
+    return '    node%d [color="#444443", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="#FBFEB0", label=<%s>];\n' % (id(s),html)
+
+
+def string_html(s):
+    values = list(s)
+    header = \
+        """
+        <table BORDER="0" CELLPADDING="0" CELLBORDER="0" CELLSPACING="0">
+        """
+
+    index_html = '<td cellspacing="0" cellpadding="0" bgcolor="#FBFEB0" border="1" sides="br" valign="top"><font color="#444443" point-size="9">%d</font></td>\n'
+    value_html = '<td cellspacing="0" cellpadding="0" port="%d" bgcolor="#FBFEB0" border="0" align="center"><font face="Monaco" point-size="11">%s</font></td>\n'
+    # don't want right border to show on last.
+    last_index_html = '<td cellspacing="0" cellpadding="0" bgcolor="#FBFEB0" border="1" sides="b" valign="top"><font color="#444443" point-size="9">%d</font></td>\n'
+    last_value_html = '<td port="%d" cellspacing="0" cellpadding="0" bgcolor="#FBFEB0" border="0" align="center"><font face="Monaco" point-size="11">%s</font></td>\n'
+
+    lastindex = len(values) - 1
+    toprow = [index_html % i for i in range(lastindex)]
+    bottomrow = [value_html % (i,values[i]) for i in range(lastindex)]
+
+    toprow.append(last_index_html % (lastindex))
+    bottomrow.append(last_value_html % (lastindex, values[lastindex]))
+
+    tail = \
+        """
+        </table>
+        """
+    return header + '<tr><td></td>\n'+''.join(toprow)+'<td></td></tr>\n' + '<tr><td>\'</td>\n'+''.join(bottomrow)+'<td>\'</td></tr>' + tail
+
+
 def idx_elviz(idx, el, showassoc):
     return label_elviz(str(idx), el, showassoc)
 
 
 if __name__ == '__main__':
     i = 3
+    price = 9.4
     name = 'parrt'
     s = [3, 9, 10]
-    t = {'a':999, 'b':1}
-    g = varviz(['i','name', 's', 't'])
+    t = {'a': 999, 'b': 1}
+    g = varviz(['i','name', 's', 't', 'price'])
+    # g = strviz('parrt')
     # g = lolviz([[2],[3,4]])
     # g = dictviz(t)
     # g = listviz('parrt')
