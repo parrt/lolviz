@@ -62,11 +62,13 @@ def varviz(varnames=None, exclude=[], showassoc=False):
     # Show data structures in the heap
     for name in varnames:
         v = scope[name]
-        if type(v)==list or type(v)==tuple:
+        if islol(v):
+            s += lol_nodes(v,showassoc)
+        elif type(v)==list or type(v)==tuple:
             s += list_node(v, True)
-        if type(v)==dict:
+        elif type(v)==dict:
             s += dict_node(v)
-        if type(v)==str:
+        elif type(v)==str:
             s += string_node(v)
 
     # Draw edges to objects in the heap
@@ -218,12 +220,6 @@ def lolviz(table, showassoc=True):
 
     If showassoc, display 2-tuples (x,y) as x->y.
     """
-    def islol(table):
-        for x in table:
-            if type(x)==list or type(x)==tuple:
-                return True
-        return False
-
     if not islol(table):
         return listviz(table, showassoc)
 
@@ -233,37 +229,44 @@ def lolviz(table, showassoc=True):
         rankdir=LR;
         node [penwidth="0.5", shape=record,width=.1,height=.1];
     """
+
+    s += lol_nodes(table, showassoc)
+
+    s += "}\n"
+    # print s
+    return graphviz.Source(s)
+
+
+def lol_nodes(table, showassoc):
+    s = ""
     # Make outer list as vertical
     labels = []
     for i in range(len(table)):
         labels.append("<f%d> %d" % (i, i))
-
-    s += '    mainlist [color="#444443", fontsize="9", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="#D9E6F5", label = "'+'|'.join(labels)+'"];\n'
-
+    s += '    node%d [color="#444443", fontsize="9", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="#D9E6F5", label = "%s"];\n' % (
+    id(table), '|'.join(labels))
     # define inner lists
     for i in range(len(table)):
         bucket = table[i]
-        if bucket==None:
+        if bucket == None:
             continue
-        elements = []
-        if (type(bucket)==list or type(bucket)==tuple) and len(bucket) == 0:
-            s += 'node%d [margin="0.03", fontname="Italics", shape=none label=<<font color="#444443" point-size="9">empty list</font>>];\n' % id(bucket)
-        elif type(bucket)==list or type(bucket)==tuple and len(bucket)>0:
+        if (type(bucket) == list or type(bucket) == tuple) and len(bucket) == 0:
+            s += 'node%d [margin="0.03", shape=none label=<<font color="#444443" point-size="9">empty list</font>>];\n' % id(
+                bucket)
+        elif type(bucket) == list or type(bucket) == tuple and len(bucket) > 0:
             s += list_node(bucket, showassoc)
-            # s += 'node%d [color="#444443", fontname="Helvetica", margin="0.01", space="0.0", shape=record label=<{%s}>];\n' % (i, '|'.join(elements))
         else:
-            elements.append(elviz(bucket, showassoc))
-            s += 'node%d [color="#444443", fontname="Helvetica", margin="0.01", space="0.0", shape=record label=<{%s}>];\n' % (i, '|'.join(elements))
+            s += 'node%d [color="#444443", fontname="Helvetica", margin="0.01", space="0.0", shape=record label=<{%s}>];\n' % (
+            i, elviz(bucket, showassoc))
 
     # Do edges
     for i in range(len(table)):
         bucket = table[i]
-        if bucket==None:
+        if bucket == None:
             continue
-        s += 'mainlist:f%d -> node%d [penwidth="0.5", color="#444443", arrowsize=.4]\n' % (i,id(bucket))
-    s += "}\n"
-    # print s
-    return graphviz.Source(s)
+        s += 'node%d:f%d -> node%d [penwidth="0.5", color="#444443", arrowsize=.4]\n' % (
+        id(table), i, id(bucket))
+    return s
 
 
 def elviz(el, showassoc):
@@ -455,6 +458,14 @@ def idx_elviz(idx, el, showassoc):
     return label_elviz(str(idx), el, showassoc)
 
 
+def islol(table):
+    if type(table)!=list: return False
+    for x in table:
+        if type(x)==list or type(x)==tuple:
+            return True
+    return False
+
+
 if __name__ == '__main__':
     key = 'a'
     value = 99
@@ -481,7 +492,7 @@ if __name__ == '__main__':
     head = Node({3, 4}, head)
     g = llistviz(head)
 
-    table = [[], [], [], [], []]
+    table = [[], [], [], []]
     lolviz(table)
     print "hashcode =", hashcode(key)
     bucket_index = hashcode(key) % len(table)
@@ -495,9 +506,9 @@ if __name__ == '__main__':
     s = [3, 9, 10]
     t = {'a': 999, 'b': 1}
     # g = varviz(['i','name', 's', 't', 'price'])
-    g = varviz()
+    g = varviz(['bucket','table'])
     # g = strviz('parrt')
-    # g = lolviz([[2],[3,4]])
+    # g = lolviz([[2],[3,4], []])
     # g = dictviz(t)
     # g = listviz('parrt')
     print g.source
