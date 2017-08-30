@@ -12,6 +12,12 @@ There are currently five functions of interest that return `graphviz.files.Sourc
 
 ## Installation
 
+First you need graphviz. On a mac it's easy:
+
+```bash
+$ brew install graphviz
+```
+
 ```bash
 $ pip install lolviz
 ```
