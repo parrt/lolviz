@@ -5,8 +5,7 @@ Inspired by the object connectivity graphs in Pythontutor.com
 """
 import graphviz
 import inspect
-from types import ModuleType
-
+import types
 
 def strviz(str):
     s = """
@@ -33,9 +32,11 @@ def varviz(varnames=None, exclude=[], showassoc=False):
     def ignoresym(sym):
         return sym[0].startswith('_') or\
                callable(sym[1]) or\
-               isinstance(sym[1], ModuleType) or \
+               isinstance(sym[1], types.ModuleType) or \
                repr(sym[1]).startswith('<') or\
                sym[0] in exclude
+
+    def show_inheap(v): return type(v)==list or type(v)==tuple or type(v)==dict or type(v)==str
 
     stack = inspect.stack()
     caller = stack[1]
@@ -50,7 +51,7 @@ def varviz(varnames=None, exclude=[], showassoc=False):
     values = []
     for name in varnames:
         v = scope[name]
-        if type(v)==list or type(v)==tuple or type(v)==dict or type(v)==str:
+        if show_inheap(v):
             values.append(None)
         else:
             values.append(elviz(v, showassoc))
@@ -71,7 +72,7 @@ def varviz(varnames=None, exclude=[], showassoc=False):
     # Draw edges to objects in the heap
     for name in varnames:
         v = scope[name]
-        if type(v)==list or type(v)==tuple or type(v)==dict or type(v)==str:
+        if show_inheap(v):
             s += 'vars:%s:c -> node%d [dir=both, tailclip=false, arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (name,id(scope[name]))
 
     s += '}\n'
@@ -465,7 +466,7 @@ if __name__ == '__main__':
     # test linked list node
     class Node:
         def __str__(self):
-            return "(%s,%s)" % (self.value, str(self.next))
+            return "Node(%s,%s)" % (self.value, str(self.next))
 
         def __repr__(self):
             return str(self)
