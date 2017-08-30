@@ -5,6 +5,8 @@ Inspired by the object connectivity graphs in Pythontutor.com
 """
 import graphviz
 import inspect
+from types import ModuleType
+
 
 def strviz(str):
     s = """
@@ -20,7 +22,7 @@ def strviz(str):
     return graphviz.Source(s)
 
 
-def varviz(varnames, showassoc=False):
+def varviz(varnames=None, exclude=[], showassoc=False):
     s = """
     digraph G {
         nodesep=.05;
@@ -28,12 +30,21 @@ def varviz(varnames, showassoc=False):
         node [penwidth="0.5", shape=record,width=.1,height=.1];
     """
 
+    def ignoresym(sym):
+        return sym[0].startswith('_') or\
+               callable(sym[1]) or\
+               isinstance(sym[1], ModuleType) or \
+               repr(sym[1]).startswith('<') or\
+               sym[0] in exclude
+
     stack = inspect.stack()
     caller = stack[1]
+    scope = caller[0].f_locals
+    if varnames is None:
+        varnames = [sym[0] for sym in scope.items() if not ignoresym(sym)]
     caller_scopename = caller[3]
     if caller_scopename=='<module>':
         caller_scopename = 'globals'
-    scope = caller[0].f_locals
 
     # Show scope dictionary
     values = []
@@ -267,6 +278,8 @@ def elviz(el, showassoc):
         els = repr(el)
     els = els.replace('{', '&#123;')
     els = els.replace('}', '&#125;')
+    els = els.replace('<', '&lt;')
+    els = els.replace('>', '&gt;')
     return els
 
 
@@ -442,12 +455,46 @@ def idx_elviz(idx, el, showassoc):
 
 
 if __name__ == '__main__':
+    key = 'a'
+    value = 99
+
+
+    def hashcode(o): return ord(o)  # assume keys are single-element strings
+
+
+    # test linked list node
+    class Node:
+        def __str__(self):
+            return "(%s,%s)" % (self.value, str(self.next))
+
+        def __repr__(self):
+            return str(self)
+
+        def __init__(self, value, next=None):
+            self.value = value
+            self.next = next
+
+
+    head = Node('tombu')
+    head = Node('parrt', head)
+    head = Node({3, 4}, head)
+    g = llistviz(head)
+
+    table = [[], [], [], [], []]
+    lolviz(table)
+    print "hashcode =", hashcode(key)
+    bucket_index = hashcode(key) % len(table)
+    print "bucket_index =", bucket_index
+    bucket = table[bucket_index]
+    bucket.append((key, value))  # add association to the bucket
+    lolviz(table)
     i = 3
     price = 9.4
     name = 'parrt'
     s = [3, 9, 10]
     t = {'a': 999, 'b': 1}
-    g = varviz(['i','name', 's', 't', 'price'])
+    # g = varviz(['i','name', 's', 't', 'price'])
+    g = varviz()
     # g = strviz('parrt')
     # g = lolviz([[2],[3,4]])
     # g = dictviz(t)
