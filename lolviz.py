@@ -22,6 +22,38 @@ def strviz(str):
 
 
 def varviz(varnames=None, exclude=[], showassoc=False):
+    """
+    Display the variables of the scope of the caller of this function.
+
+    We have to be careful when displaying complex data structures
+    emanating from a scope of variables. For example, if bucket points
+    into a hash table called table, then bucket should point into
+    table's existing structure and not define its own node. The order
+    in which the variables in the scope are encountered by this
+    routine shouldn't change the sharing of nodes. We need an
+    algorithm for figuring out what variables should point to what
+    graphviz nodes.
+
+    Let's call the nodes pointed to by the vars in the scope
+    "roots". We also need an overall list of graphviz nodes (nodes) because,
+    depending on the order we see variables, we might need to replace
+    a node. We use nodeN for N=id(ptr) so we know what to share. The
+    rules for creation of new graphviz nodes are:
+
+    1. Creating root nodes. For a variable pointing at a node that
+       does not yet exist, we create the node as usual and recorded in
+       the overall dictionary of nodes.  If the node already exists,
+       we don't define a new node and simply create an edge to the old
+       node.
+
+    2. Creating nested nodes. If we try to create a node as part of a
+       data structure reached from some root, we create the node as
+       expected and replace any existing node created as a root. We
+       give preference to creating nicely created data structures and
+       make variables refer to elements within that structure. This is
+       the opposite of making the data structure refer to some not
+       created earlier by a variable.
+    """
     s = """
     digraph G {
         nodesep=.05;
@@ -47,29 +79,39 @@ def varviz(varnames=None, exclude=[], showassoc=False):
     if caller_scopename=='<module>':
         caller_scopename = 'globals'
 
-    # Show scope dictionary
+    # collect values for vars not shown in the heap; leave those roots as None in values
+    # also collect the list of roots
     values = []
+    roots = []
     for name in varnames:
         v = scope[name]
         if show_inheap(v):
             values.append(None)
+            roots.append(v)
         else:
             values.append(elviz(v, showassoc))
 
+    # Show scope dictionary
     html = scopetable_html(caller_scopename, varnames, values)
     s += '    vars [shape="box", color="#444443", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="#D9E6F5", label = <%s>];\n' % html
 
     # Show data structures in the heap
+    nodes = {}
     for name in varnames:
         v = scope[name]
+        key = "node%d" % id(v)
         if islol(v):
-            s += lol_nodes(v,showassoc)
+            d,e = lol_nodes(v, showassoc)
+            nodes.update(d)
+            s += ''.join(e)
         elif type(v)==list or type(v)==tuple:
-            s += list_node(v, True)
+            nodes[key] = list_node(v, True)
         elif type(v)==dict:
-            s += dict_node(v)
+            nodes[key] = dict_node(v)
         elif type(v)==str:
-            s += string_node(v)
+            nodes[key] = string_node(v)
+
+    s += ''.join(nodes.values())
 
     # Draw edges to objects in the heap
     for name in varnames:
@@ -230,7 +272,9 @@ def lolviz(table, showassoc=True):
         node [penwidth="0.5", shape=record,width=.1,height=.1];
     """
 
-    s += lol_nodes(table, showassoc)
+    nodes,edges = lol_nodes(table, showassoc)
+    s += ''.join(nodes.values())
+    s += ''.join(edges)
 
     s += "}\n"
     # print s
@@ -238,35 +282,40 @@ def lolviz(table, showassoc=True):
 
 
 def lol_nodes(table, showassoc):
+    """
+    Create and return a dictionary mapping node name to graphviz code for that node.
+    Also return a list of edges connecting the outer list to the inner lists.
+    """
+    nodes = {}
     s = ""
     # Make outer list as vertical
     labels = []
     for i in range(len(table)):
         labels.append("<f%d> %d" % (i, i))
-    s += '    node%d [color="#444443", fontsize="9", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="#D9E6F5", label = "%s"];\n' % (
-    id(table), '|'.join(labels))
+    s = 'node%d [color="#444443", fontsize="9", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="#D9E6F5", label = "%s"];\n' % (id(table), '|'.join(labels))
+    nodes['node%d'%id(table)] = s
     # define inner lists
     for i in range(len(table)):
         bucket = table[i]
         if bucket == None:
             continue
         if (type(bucket) == list or type(bucket) == tuple) and len(bucket) == 0:
-            s += 'node%d [margin="0.03", shape=none label=<<font color="#444443" point-size="9">empty list</font>>];\n' % id(
-                bucket)
+            s = 'node%d [margin="0.03", shape=none label=<<font color="#444443" point-size="9">empty list</font>>];\n' % id(bucket)
         elif type(bucket) == list or type(bucket) == tuple and len(bucket) > 0:
-            s += list_node(bucket, showassoc)
+            s = list_node(bucket, showassoc)
         else:
-            s += 'node%d [color="#444443", fontname="Helvetica", margin="0.01", space="0.0", shape=record label=<{%s}>];\n' % (
-            i, elviz(bucket, showassoc))
+            s = 'node%d [color="#444443", fontname="Helvetica", margin="0.01", space="0.0", shape=record label=<{%s}>];\n' % (id(bucket), elviz(bucket, showassoc))
+        nodes['node%d' % id(bucket)] = s
 
     # Do edges
+    edges = []
     for i in range(len(table)):
         bucket = table[i]
         if bucket == None:
             continue
-        s += 'node%d:f%d -> node%d [penwidth="0.5", color="#444443", arrowsize=.4]\n' % (
-        id(table), i, id(bucket))
-    return s
+        s = 'node%d:f%d -> node%d [penwidth="0.5", color="#444443", arrowsize=.4]\n' % (id(table), i, id(bucket))
+        edges.append(s)
+    return nodes, edges
 
 
 def elviz(el, showassoc):
@@ -506,7 +555,9 @@ if __name__ == '__main__':
     s = [3, 9, 10]
     t = {'a': 999, 'b': 1}
     # g = varviz(['i','name', 's', 't', 'price'])
-    g = varviz(['bucket','table'])
+    # g = varviz(['bucket','table'])
+    g = varviz(['table'])
+    # g = varviz(['table','bucket'])
     # g = strviz('parrt')
     # g = lolviz([[2],[3,4], []])
     # g = dictviz(t)
