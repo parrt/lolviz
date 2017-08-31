@@ -10,6 +10,9 @@ General notes / reminders to parrt:
     warning: <td> and </td> must be on same line or row is super wide!
 """
 import graphviz
+import inspect
+import types
+import sys
 
 YELLOW = "#FBFEB0"
 BLUE = "#D9E6F5"
@@ -186,6 +189,18 @@ def lolviz(table, showassoc=True):
     return graphviz.Source(s)
 
 
+def varviz(varnames=[]):
+    stack = inspect.stack()
+    caller = stack[1]
+    caller_frame = caller[0]
+    scope = caller_frame.f_locals
+    if varnames is None:
+        varnames = [sym[0] for sym in scope.items() if not ignoresym(sym)]
+    caller_scopename = caller[3]
+    if caller_scopename=='<module>':
+        caller_scopename = 'globals'
+
+
 def objviz(o):
     """Draw an arbitrary object graph."""
     s = """
@@ -201,7 +216,10 @@ digraph G {
     # define nodes
     for p in reachable:
         nodename = "node%d" % id(p)
-        if type(p)==dict:
+        if type(p)==types.FrameType:
+            frame = p
+            print "frame"
+        elif type(p)==dict:
             print "DRAW DICT", p, '@ node' + nodename
             pairs = []
             for k,v in p.items():
@@ -612,11 +630,12 @@ if __name__ == '__main__':
     head = Node('tombu')
     head = Node('parrt', head)
     head = Node({1,2}, head)
-    g = llistviz(head)
+    # g = llistviz(head)
 
     table = [[3,4], ["aaa",5.3], head]
     d = {'foo':table, 'bar':99}
-    g = objviz(d)
+    frame = sys._getframe(0)
+    g = objviz(frame)
     # print "hashcode =", hashcode(key)
     # bucket_index = hashcode(key) % len(table)
     # print "bucket_index =", bucket_index
