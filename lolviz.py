@@ -411,10 +411,39 @@ def islol(table):
     return False
 
 
+def closure(p):
+    """
+    Find all nodes reachable from p and return a list of pointers to those reachable.
+    There could be duplicates for cyclic graphs but a visited set prevents infinite loops.
+    """
+    return closure_(p, set())
+
+
+def closure_(p, visited):
+    if p is None or type(p)==int or type(p)==float:
+        return []
+    if id(p) in visited:
+        return []
+    visited.add(id(p))
+    result = [p]
+    if type(p)==dict:
+        for q in p.values():
+            cl = closure_(q, visited)
+            result.extend(cl)
+    elif hasattr(p, "__dict__"): # regular object like Tree or Node
+        for q in p.__dict__.values():
+            cl = closure_(q, visited)
+            result.extend(cl)
+    elif hasattr(p, "__iter__"): # a list or similar
+        for q in p:
+            cl = closure_(q, visited)
+            result.extend(cl)
+    return result
+
+
 if __name__ == '__main__':
     key = 'a'
     value = 99
-
 
     def hashcode(o): return ord(o)  # assume keys are single-element strings
 
@@ -437,18 +466,21 @@ if __name__ == '__main__':
     head = Node({3, 4}, head)
     g = llistviz(head)
 
-    table = [[], [], [], []]
-    lolviz(table)
-    print "hashcode =", hashcode(key)
-    bucket_index = hashcode(key) % len(table)
-    print "bucket_index =", bucket_index
-    bucket = table[bucket_index]
-    bucket.append((key, value))  # add association to the bucket
-    lolviz(table)
-    i = 3
-    price = 9.4
-    name = 'parrt'
-    s = [3, 9, 10]
-    t = {'a': 999, 'b': 1}
-    print g.source
-    g.render(view=True)
+    cl = closure({'a':head, 'b':99})
+    print '\n'.join([str(o) for o in cl])
+
+    # table = [[], [], [], []]
+    # lolviz(table)
+    # print "hashcode =", hashcode(key)
+    # bucket_index = hashcode(key) % len(table)
+    # print "bucket_index =", bucket_index
+    # bucket = table[bucket_index]
+    # bucket.append((key, value))  # add association to the bucket
+    # lolviz(table)
+    # i = 3
+    # price = 9.4
+    # name = 'parrt'
+    # s = [3, 9, 10]
+    # t = {'a': 999, 'b': 1}
+    # print g.source
+    # g.render(view=True)
