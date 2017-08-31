@@ -4,8 +4,6 @@ and lists of lists in a reasonable manner using graphviz.
 Inspired by the object connectivity graphs in Pythontutor.com
 """
 import graphviz
-import inspect
-import types
 
 def strviz(str):
     s = """
@@ -19,164 +17,6 @@ def strviz(str):
 
     s += '}\n'
     return graphviz.Source(s)
-
-
-def varviz(varnames=None, exclude=[], showassoc=False):
-    """
-    Display the variables of the scope of the caller of this function.
-
-    We have to be careful when displaying complex data structures
-    emanating from a scope of variables. For example, if bucket points
-    into a hash table called table, then bucket should point into
-    table's existing structure and not define its own node. The order
-    in which the variables in the scope are encountered by this
-    routine shouldn't change the sharing of nodes. We need an
-    algorithm for figuring out what variables should point to what
-    graphviz nodes.
-
-    Let's call the nodes pointed to by the vars in the scope
-    "roots". We also need an overall list of graphviz nodes (nodes) because,
-    depending on the order we see variables, we might need to replace
-    a node. We use nodeN for N=id(ptr) so we know what to share. The
-    rules for creation of new graphviz nodes are:
-
-    1. Creating root nodes. For a variable pointing at a node that
-       does not yet exist, we create the node as usual and recorded in
-       the overall dictionary of nodes.  If the node already exists,
-       we don't define a new node and simply create an edge to the old
-       node.
-
-    2. Creating nested nodes. If we try to create a node as part of a
-       data structure reached from some root, we create the node as
-       expected and replace any existing node created as a root. We
-       give preference to creating nicely created data structures and
-       make variables refer to elements within that structure. This is
-       the opposite of making the data structure refer to some not
-       created earlier by a variable.
-
-    Actually, we need a better way. Let's look at the reachability
-    graph starting from each root. If there is overlap, we give
-    preference to the larger data structure: the one with more
-    reachable nodes. That way, if a root points into a larger data
-    structure coming later, we will display the larger data structure
-    first and then have that variable point into it. We don't dig too
-    deep into the object graph and so reachability should be pretty
-    easy. Try to do a topological sort or just move of variables
-    associated with smaller intersecting sets to the end of the
-    varnames list. Then, avoid creating nodes for those that already
-    exist.
-    """
-    s = """
-    digraph G {
-        nodesep=.05;
-        rankdir=LR;
-        node [penwidth="0.5", shape=record,width=.1,height=.1];
-    """
-
-    def ignoresym(sym):
-        return sym[0].startswith('_') or\
-               callable(sym[1]) or\
-               isinstance(sym[1], types.ModuleType) or \
-               repr(sym[1]).startswith('<') or\
-               sym[0] in exclude
-
-    def show_inheap(v): return type(v)==list or type(v)==tuple or type(v)==dict or type(v)==str
-
-    stack = inspect.stack()
-    caller = stack[1]
-    scope = caller[0].f_locals
-    if varnames is None:
-        varnames = [sym[0] for sym in scope.items() if not ignoresym(sym)]
-    caller_scopename = caller[3]
-    if caller_scopename=='<module>':
-        caller_scopename = 'globals'
-
-    # collect values for vars not shown in the heap; leave those roots as None in values
-    # also collect the list of roots
-    values = []
-    roots = {} # map name to v
-    for name in varnames:
-        v = scope[name]
-        if show_inheap(v):
-            values.append(None)
-            roots[name] = v
-        else:
-            values.append(elviz(v, showassoc))
-
-    ritems = roots.items()
-    for i in range(len(ritems)):
-        for j in range(i+1,len(ritems)):
-            name = ritems[i][0]
-            name2 = ritems[j][0]
-            root = ritems[i][1]
-            root2 = ritems[j][1]
-            if len(reachable(root) & reachable(root2))>0:
-                # oops; overlap. Order so that embedded root comes second
-                if root2 in reachable(root):
-
-            else:
-
-            print "%s vs %s intersection %s %d vs %d" % (name, name2,
-                                                        reachable(root) & reachable(root2),
-                                                        len(reachable(root)), len(reachable(root2)))
-
-    # Show scope dictionary
-    html = scopetable_html(caller_scopename, varnames, values)
-    s += '    vars [shape="box", color="#444443", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="#D9E6F5", label = <%s>];\n' % html
-
-    # Show data structures in the heap
-    nodes = {} # map root node name to all nodes created for stuff emanating from that root node
-    edges = {} # map root node name to all edges created for stuff emanating from that root node
-    for name in varnames:
-        v = scope[name]
-        key = "node%d" % id(v)
-        if key in nodes:
-            # if node already exists, we don't recreate; we'll add edge to
-            # existing node below. (Rule #1 above)
-            continue
-        if islol(v):
-            lolnodes,loledges = lol_nodes(v, showassoc)
-            for n in lolnodes:
-                if n in nodes:
-                    del nodes[n]   # kill old one, giving preference to new ones
-                    if n in edges: # also kill any edges we created for it
-                        del edges[n]
-            nodes[key] = lolnodes  # add all remaining
-            edges[key] = loledges
-        elif type(v)==list or type(v)==tuple:
-            nodes[key] = list_node(v, True)
-        elif type(v)==dict:
-            nodes[key] = dict_node(v)
-        elif type(v)==str:
-            nodes[key] = string_node(v)
-
-    s += ''.join(nodes.values())
-    for e in edges.values():
-        s += ''.join(e)
-
-    # Draw edges to objects in the heap
-    for name in varnames:
-        v = scope[name]
-        if show_inheap(v):
-            s += 'vars:%s:c -> node%d [dir=both, tailclip=false, arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (name,id(scope[name]))
-
-    s += '}\n'
-    return graphviz.Source(s)
-
-
-def reachable(o):
-    r = set()
-    if islol(o):
-        r.add(id(o))
-        for el in o:
-            r.add(id(el))
-    elif type(o)==list or type(o)==tuple:
-        r.add(id(o))
-    elif type(o)==dict:
-        r.add(id(o))
-    elif type(o)==str:
-        r.add(id(o))
-    return r
 
 
 def dictviz(d):
@@ -610,13 +450,5 @@ if __name__ == '__main__':
     name = 'parrt'
     s = [3, 9, 10]
     t = {'a': 999, 'b': 1}
-    # g = varviz(['i','name', 's', 't', 'price'])
-    g = varviz(['bucket','table','name'])
-    # g = varviz(['table'])
-    # g = varviz(['table','bucket'])
-    # g = strviz('parrt')
-    # g = lolviz([[2],[3,4], []])
-    # g = dictviz(t)
-    # g = listviz('parrt')
     print g.source
     g.render(view=True)
