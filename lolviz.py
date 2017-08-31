@@ -196,9 +196,16 @@ def varviz(varnames=[]):
     scope = caller_frame.f_locals
     if varnames is None:
         varnames = [sym[0] for sym in scope.items() if not ignoresym(sym)]
-    caller_scopename = caller[3]
+    caller_scopename = caller[2]
     if caller_scopename=='<module>':
         caller_scopename = 'globals'
+
+
+def ignoresym(sym):
+    return sym[0].startswith('_') or\
+           callable(sym[1]) or\
+           isinstance(sym[1], types.ModuleType) or \
+           repr(sym[1]).startswith('<')
 
 
 def objviz(o):
@@ -218,7 +225,21 @@ digraph G {
         nodename = "node%d" % id(p)
         if type(p)==types.FrameType:
             frame = p
-            print "frame"
+            info = inspect.getframeinfo(frame)
+            caller_scopename = info[2]
+            if caller_scopename == '<module>':
+                caller_scopename = 'globals'
+            # varnames = [sym[0] for sym in frame.f_locals.items() if not ignoresym(sym)]
+            pairs = []
+            for k,v in frame.f_locals.items():
+                if ignoresym((k,v)):
+                    continue
+                if isatom(v):
+                    pairs.append((k,v))
+                else:
+                    pairs.append((k,None))
+            s += '// DICT\n'
+            s += gr_dict_node(nodename, caller_scopename, pairs, bgcolor=BLUE)
         elif type(p)==dict:
             print "DRAW DICT", p, '@ node' + nodename
             pairs = []
@@ -573,7 +594,12 @@ def closure_(p, visited):
         return []
     visited.add(id(p))
     result = [p]
-    if type(p)==dict:
+    if type(p) == types.FrameType:
+        for k, v in frame.f_locals.items():
+            if not ignoresym((k, v)):
+                cl = closure_(v, visited)
+                result.extend(cl)
+    elif type(p)==dict:
         for q in p.values():
             cl = closure_(q, visited)
             result.extend(cl)
