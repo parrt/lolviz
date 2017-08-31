@@ -2,15 +2,24 @@
 A small set of functions that display lists, dictionaries,
 and lists of lists in a reasonable manner using graphviz.
 Inspired by the object connectivity graphs in Pythontutor.com
+
+General notes / reminders to parrt:
+
+    Ugh. shape=record means html-labels can't use ports. warning!
+
+    warning: <td> and </td> must be on same line or row is super wide!
 """
 import graphviz
+
+YELLOW = "#FBFEB0"
+BLUE = "#D9E6F5"
 
 def strviz(str):
     s = """
     digraph G {
         nodesep=.05;
         rankdir=LR;
-        node [penwidth="0.5", shape=record,width=.1,height=.1];
+        node [penwidth="0.5", width=.1,height=.1];
     """
 
     s += string_node(str)
@@ -42,7 +51,7 @@ def listviz(elems, showassoc=True):
     s = """
     digraph G {
         nodesep=.05;
-        node [penwidth="0.5", shape=record,width=.1,height=.1];
+        node [penwidth="0.5", width=.1,height=.1];
     """
     if type(elems)==dict:
         return dictviz(elems)
@@ -165,7 +174,7 @@ def lolviz(table, showassoc=True):
     digraph G {
         nodesep=.05;
         rankdir=LR;
-        node [penwidth="0.5", shape=record,width=.1,height=.1];
+        node [penwidth="0.5", width=.1,height=.1];
     """
 
     nodes,edges = lol_nodes(table, showassoc)
@@ -180,43 +189,56 @@ def lolviz(table, showassoc=True):
 def objviz(o):
     """Draw an arbitrary object graph."""
     s = """
-    digraph G {
-        nodesep=.05;
-        node [penwidth="0.5", shape=record,width=.1,height=.1];
-    """
+digraph G {
+    nodesep=.05;
+    rankdir=LR;
+    node [penwidth="0.5", shape=box, width=.1, height=.1];
+    
+"""
 
     reachable = closure(o)
+
+    # define nodes
     for p in reachable:
-        nodename = str(id(p))
+        nodename = "node%d" % id(p)
         if type(p)==dict:
             print "DRAW DICT", p, '@ node' + nodename
             pairs = []
             for k,v in p.items():
                 if isatom(v):
-                    pairs.append((repr(k),v))
+                    pairs.append((k,v))
                 else:
-                    pairs.append((repr(k),' '))
-            s += gr_dict_node(nodename, pairs)
+                    pairs.append((k,None))
+            s += '// DICT\n'
+            s += gr_dict_node(nodename, None, pairs)
         elif hasattr(p, "__iter__"):
             print "DRAW LIST", p, '@ node' + nodename
             elems = []
             for el in p:
                 if isatom(el):
-                    elems.append(repr(el))
+                    elems.append(el)
                 else:
                     elems.append(' ')
+            s += '// LIST or ITERATABLE\n'
             s += gr_list_node(nodename, elems)
         elif hasattr(p,"__dict__"): # generic object
             print "DRAW OBJ", p, '@ node' + nodename
             pairs = []
             for k,v in p.__dict__.items():
                 if isatom(v):
-                    pairs.append((repr(k),v))
+                    pairs.append((k,v))
                 else:
-                    pairs.append((repr(k),' '))
-            s += gr_dict_node(nodename, pairs)
+                    pairs.append((k,None))
+            s += '// OBJECT with fields\n'
+            s += gr_dict_node(nodename, p.__class__.__name__, pairs)
         else:
             print "CANNOT HANDLE: "+str(p)
+
+    # define edges
+    es = edges(reachable)
+    for (p,port,q) in es:
+        s += 'node%d:%s:c -> node%d [dir=both, tailclip=false, arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (id(p),port,id(q))
+
     s += "}\n"
     return graphviz.Source(s)
 
@@ -244,7 +266,7 @@ def lol_nodes(table, showassoc):
         elif type(bucket) == list or type(bucket) == tuple and len(bucket) > 0:
             s = list_node(bucket, showassoc)
         else:
-            s = 'node%d [color="#444443", fontname="Helvetica", margin="0.01", space="0.0", shape=record label=<{%s}>];\n' % (id(bucket), elviz(bucket, showassoc))
+            s = 'node%d [color="#444443", fontname="Helvetica", margin="0.01", space="0.0", label=<{%s}>];\n' % (id(bucket), elviz(bucket, showassoc))
         nodes['node%d' % id(bucket)] = s
 
     # Do edges
@@ -346,22 +368,41 @@ def gr_listtable_html(values):
     return header + '<tr>\n'+''.join(toprow)+'</tr>\n' + '<tr>\n'+''.join(bottomrow)+'</tr>' + tail
 
 
-def gr_dict_node(nodename, d):
-    html = gr_dict_html(d)
-    return '%s [color="#444443", fontsize="9", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="#FBFEB0", label=<%s>];\n' % (nodename,html)
+def gr_dict_node(nodename, title, pairs, bgcolor=YELLOW):
+    html = gr_dict_html(title, pairs, bgcolor)
+    return '%s [color="#444443", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="%s", label=<%s>];\n' % (nodename,bgcolor,html)
 
 
-def gr_dict_html(pairs):
-    header = '<table BORDER="0" CELLBORDER="1" CELLSPACING="0">\n'
+def gr_dict_html(title, pairs, bgcolor=YELLOW):
+    header = '<table BORDER="0" CELLPADDING="0" CELLBORDER="1" CELLSPACING="0">\n'
+
+    blankrow = '<tr><td cellpadding="1" border="0"></td></tr>'
+
     rows = []
+    if title is not None:
+        title = '<tr><td cellspacing="0" colspan="2" cellpadding="0" bgcolor="%s" border="0" align="center"><font color="#444443" FACE="Times-Italic" point-size="11">%s</font></td></tr>\n' % (bgcolor, title)
+        rows.append(title)
     for key,value in pairs:
-        pair = "%s&rarr;%s" % (repr(key),value)
-        html = '<td port="%s" cellspacing="0" cellpadding="0" bgcolor="#FBFEB0" border="0" valign="top" align="left"><font color="#444443" point-size="11">%s</font></td>\n' % (key,pair)
-        row = '<tr>\n' + html + '</tr>\n'
+        name = '<td cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="r" align="right"><font color="#444443" point-size="11">%s </font></td>\n' % (bgcolor,repr(key))
+        if value is not None:
+            v = repr(value)
+        else:
+            v = ""
+        value = '<td port="%s" cellspacing="0" cellpadding="1" bgcolor="%s" border="0" align="left"><font color="#444443" point-size="11"> %s</font></td>\n' % (key, bgcolor, v)
+        row = '<tr>' + name + value + '</tr>\n'
         rows.append(row)
 
+
+        # if value==None:
+        #     pair = "%s&rarr;" % repr(key)
+        # else:
+        #     pair = "%s&rarr;%s" % (repr(key), repr(value))
+        # html = '<td port="%s" cellspacing="0" cellpadding="0" bgcolor="#FBFEB0" border="0" valign="top" align="left"><font color="#444443" point-size="11">%s</font></td>\n' % (key,pair)
+        # row = '<tr>\n' + html + '</tr>\n'
+        # rows.append(row)
+
     tail = "</table>\n"
-    return header + ''.join(rows) + tail
+    return header + blankrow.join(rows) + tail
 
 
 def llistnode_html(nodevalue, valuefield, nextfield):
@@ -380,7 +421,7 @@ def llistnode_html(nodevalue, valuefield, nextfield):
         """ % (valuefield, nextfield, elviz(nodevalue, True), ' ')
 
 
-def scopetable_html(scopename, names, values):
+def scopetable_html(scopename, names, values, color="#D9E6F5"):
     header = \
         """
         <table BORDER="0" CELLBORDER="1" CELLSPACING="0">
@@ -388,7 +429,7 @@ def scopetable_html(scopename, names, values):
 
     blankrow = '<tr><td border="0"></td></tr>'
 
-    scope = '<tr><td cellspacing="0" colspan="2" cellpadding="0" bgcolor="#D9E6F5" border="0" align="center"><font color="#444443" FACE="Times-Italic" point-size="11"><i>%s</i></font></td></tr>\n' % scopename
+    scope = '<tr><td cellspacing="0" colspan="2" cellpadding="0" bgcolor="%s" border="0" align="center"><font color="#444443" FACE="Times-Italic" point-size="11"><i>%s</i></font></td></tr>\n' % (scopename,color)
 
     rows = []
     rows.append(scope)
@@ -502,7 +543,7 @@ def isatom(p): return type(p) == int or type(p) == float or type(p) == str
 def closure(p):
     """
     Find all nodes reachable from p and return a list of pointers to those reachable.
-    There could be duplicates for cyclic graphs but a visited set prevents infinite loops.
+    There can't be duplicates even for cyclic graphs due to visited set.
     """
     return closure_(p, set())
 
@@ -527,6 +568,25 @@ def closure_(p, visited):
             cl = closure_(q, visited)
             result.extend(cl)
     return result
+
+
+def edges(reachable):
+    "Return list of (p, port-in-p, q)"
+    edges = []
+    for p in reachable:
+        if type(p)==dict:
+            for k,v in p.items():
+                if not isatom(v) and v is not None:
+                    edges.append( (p,k,v) )
+        elif hasattr(p, "__iter__"):
+            for i,el in enumerate(p):
+                if not isatom(el) and el is not None:
+                    edges.append( (p,str(i),el) )
+        elif hasattr(p,"__dict__"):
+            for k,v in p.__dict__.items():
+                if not isatom(v) and v is not None:
+                    edges.append( (p,k,v) )
+    return edges
 
 
 if __name__ == '__main__':
