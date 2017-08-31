@@ -618,7 +618,11 @@ def edges(reachable):
     "Return list of (p, port-in-p, q)"
     edges = []
     for p in reachable:
-        if type(p)==dict:
+        if type(p) == types.FrameType:
+            for k, v in frame.f_locals.items():
+                if not ignoresym((k, v)) and not isatom(v) and v is not None:
+                    edges.append( (p,k,v) )
+        elif type(p)==dict:
             for k,v in p.items():
                 if not isatom(v) and v is not None:
                     edges.append( (p,k,v) )
