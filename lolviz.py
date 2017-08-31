@@ -53,6 +53,18 @@ def varviz(varnames=None, exclude=[], showassoc=False):
        make variables refer to elements within that structure. This is
        the opposite of making the data structure refer to some not
        created earlier by a variable.
+
+    Actually, we need a better way. Let's look at the reachability
+    graph starting from each root. If there is overlap, we give
+    preference to the larger data structure: the one with more
+    reachable nodes. That way, if a root points into a larger data
+    structure coming later, we will display the larger data structure
+    first and then have that variable point into it. We don't dig too
+    deep into the object graph and so reachability should be pretty
+    easy. Try to do a topological sort or just move of variables
+    associated with smaller intersecting sets to the end of the
+    varnames list. Then, avoid creating nodes for those that already
+    exist.
     """
     s = """
     digraph G {
@@ -82,28 +94,55 @@ def varviz(varnames=None, exclude=[], showassoc=False):
     # collect values for vars not shown in the heap; leave those roots as None in values
     # also collect the list of roots
     values = []
-    roots = []
+    roots = {} # map name to v
     for name in varnames:
         v = scope[name]
         if show_inheap(v):
             values.append(None)
-            roots.append(v)
+            roots[name] = v
         else:
             values.append(elviz(v, showassoc))
+
+    ritems = roots.items()
+    for i in range(len(ritems)):
+        for j in range(i+1,len(ritems)):
+            name = ritems[i][0]
+            name2 = ritems[j][0]
+            root = ritems[i][1]
+            root2 = ritems[j][1]
+            if len(reachable(root) & reachable(root2))>0:
+                # oops; overlap. Order so that embedded root comes second
+                if root2 in reachable(root):
+
+            else:
+
+            print "%s vs %s intersection %s %d vs %d" % (name, name2,
+                                                        reachable(root) & reachable(root2),
+                                                        len(reachable(root)), len(reachable(root2)))
 
     # Show scope dictionary
     html = scopetable_html(caller_scopename, varnames, values)
     s += '    vars [shape="box", color="#444443", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="#D9E6F5", label = <%s>];\n' % html
 
     # Show data structures in the heap
-    nodes = {}
+    nodes = {} # map root node name to all nodes created for stuff emanating from that root node
+    edges = {} # map root node name to all edges created for stuff emanating from that root node
     for name in varnames:
         v = scope[name]
         key = "node%d" % id(v)
+        if key in nodes:
+            # if node already exists, we don't recreate; we'll add edge to
+            # existing node below. (Rule #1 above)
+            continue
         if islol(v):
-            d,e = lol_nodes(v, showassoc)
-            nodes.update(d)
-            s += ''.join(e)
+            lolnodes,loledges = lol_nodes(v, showassoc)
+            for n in lolnodes:
+                if n in nodes:
+                    del nodes[n]   # kill old one, giving preference to new ones
+                    if n in edges: # also kill any edges we created for it
+                        del edges[n]
+            nodes[key] = lolnodes  # add all remaining
+            edges[key] = loledges
         elif type(v)==list or type(v)==tuple:
             nodes[key] = list_node(v, True)
         elif type(v)==dict:
@@ -112,6 +151,8 @@ def varviz(varnames=None, exclude=[], showassoc=False):
             nodes[key] = string_node(v)
 
     s += ''.join(nodes.values())
+    for e in edges.values():
+        s += ''.join(e)
 
     # Draw edges to objects in the heap
     for name in varnames:
@@ -121,6 +162,21 @@ def varviz(varnames=None, exclude=[], showassoc=False):
 
     s += '}\n'
     return graphviz.Source(s)
+
+
+def reachable(o):
+    r = set()
+    if islol(o):
+        r.add(id(o))
+        for el in o:
+            r.add(id(el))
+    elif type(o)==list or type(o)==tuple:
+        r.add(id(o))
+    elif type(o)==dict:
+        r.add(id(o))
+    elif type(o)==str:
+        r.add(id(o))
+    return r
 
 
 def dictviz(d):
@@ -555,8 +611,8 @@ if __name__ == '__main__':
     s = [3, 9, 10]
     t = {'a': 999, 'b': 1}
     # g = varviz(['i','name', 's', 't', 'price'])
-    # g = varviz(['bucket','table'])
-    g = varviz(['table'])
+    g = varviz(['bucket','table','name'])
+    # g = varviz(['table'])
     # g = varviz(['table','bucket'])
     # g = strviz('parrt')
     # g = lolviz([[2],[3,4], []])
