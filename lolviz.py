@@ -177,6 +177,50 @@ def lolviz(table, showassoc=True):
     return graphviz.Source(s)
 
 
+def objviz(o):
+    """Draw an arbitrary object graph."""
+    s = """
+    digraph G {
+        nodesep=.05;
+        node [penwidth="0.5", shape=record,width=.1,height=.1];
+    """
+
+    reachable = closure(o)
+    for p in reachable:
+        nodename = str(id(p))
+        if type(p)==dict:
+            print "DRAW DICT", p, '@ node' + nodename
+            pairs = []
+            for k,v in p.items():
+                if isatom(v):
+                    pairs.append((repr(k),v))
+                else:
+                    pairs.append((repr(k),' '))
+            s += gr_dict_node(nodename, pairs)
+        elif hasattr(p, "__iter__"):
+            print "DRAW LIST", p, '@ node' + nodename
+            elems = []
+            for el in p:
+                if isatom(el):
+                    elems.append(repr(el))
+                else:
+                    elems.append(' ')
+            s += gr_list_node(nodename, elems)
+        elif hasattr(p,"__dict__"): # generic object
+            print "DRAW OBJ", p, '@ node' + nodename
+            pairs = []
+            for k,v in p.__dict__.items():
+                if isatom(v):
+                    pairs.append((repr(k),v))
+                else:
+                    pairs.append((repr(k),' '))
+            s += gr_dict_node(nodename, pairs)
+        else:
+            print "CANNOT HANDLE: "+str(p)
+    s += "}\n"
+    return graphviz.Source(s)
+
+
 def lol_nodes(table, showassoc):
     """
     Create and return a dictionary mapping node name to graphviz code for that node.
@@ -254,10 +298,7 @@ def list_node(elems, showassoc):
 
 
 def listtable_html(values, showassoc):
-    header = \
-        """
-        <table BORDER="0" CELLBORDER="0" CELLSPACING="0">
-        """
+    header = '<table BORDER="0" CELLBORDER="0" CELLSPACING="0">\n'
 
     index_html = '<td cellspacing="0" bgcolor="#FBFEB0" border="1" sides="br" valign="top"><font color="#444443" point-size="9">%d</font></td>\n'
     value_html = '<td port="%d" bgcolor="#FBFEB0" border="1" sides="r" align="center"><font point-size="11">%s</font></td>\n'
@@ -272,11 +313,55 @@ def listtable_html(values, showassoc):
     toprow.append(last_index_html % (lastindex))
     bottomrow.append(last_value_html % (lastindex, elviz(values[lastindex], showassoc)))
 
-    tail = \
-        """
-        </table>
-        """
+    tail = "</table>\n"
     return header + '<tr>\n'+''.join(toprow)+'</tr>\n' + '<tr>\n'+''.join(bottomrow)+'</tr>' + tail
+
+
+def gr_list_node(nodename, elems):
+    if len(elems)>0:
+        html = gr_listtable_html(elems)
+    else:
+        html = " "
+    return '%s [shape="box", space="0.0", margin="0.01", fontcolor="#444443", fontname="Helvetica", label=<%s>];\n' % (nodename,html)
+
+
+def gr_listtable_html(values):
+    header = '<table BORDER="0" CELLBORDER="0" CELLSPACING="0">\n'
+
+    index_html = '<td cellspacing="0" bgcolor="#FBFEB0" border="1" sides="br" valign="top"><font color="#444443" point-size="9">%d</font></td>\n'
+    value_html = '<td port="%d" bgcolor="#FBFEB0" border="1" sides="r" align="center"><font point-size="11">%s</font></td>\n'
+    # don't want right border to show on last.
+    last_index_html = '<td cellspacing="0" bgcolor="#FBFEB0" border="1" sides="b" valign="top"><font color="#444443" point-size="9">%d</font></td>\n'
+    last_value_html = '<td port="%d" bgcolor="#FBFEB0" border="0" align="center"><font point-size="11">%s</font></td>\n'
+
+    lastindex = len(values) - 1
+    toprow = [index_html % i for i in range(lastindex)]
+    bottomrow = [value_html % (i,values[i]) for i in range(lastindex)]
+
+    if len(values)>1:
+        toprow.append(last_index_html % (lastindex))
+        bottomrow.append(last_value_html % (lastindex, values[lastindex]))
+
+    tail = "</table>\n"
+    return header + '<tr>\n'+''.join(toprow)+'</tr>\n' + '<tr>\n'+''.join(bottomrow)+'</tr>' + tail
+
+
+def gr_dict_node(nodename, d):
+    html = gr_dict_html(d)
+    return '%s [color="#444443", fontsize="9", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="#FBFEB0", label=<%s>];\n' % (nodename,html)
+
+
+def gr_dict_html(pairs):
+    header = '<table BORDER="0" CELLBORDER="1" CELLSPACING="0">\n'
+    rows = []
+    for key,value in pairs:
+        pair = "%s&rarr;%s" % (repr(key),value)
+        html = '<td port="%s" cellspacing="0" cellpadding="0" bgcolor="#FBFEB0" border="0" valign="top" align="left"><font color="#444443" point-size="11">%s</font></td>\n' % (key,pair)
+        row = '<tr>\n' + html + '</tr>\n'
+        rows.append(row)
+
+    tail = "</table>\n"
+    return header + ''.join(rows) + tail
 
 
 def llistnode_html(nodevalue, valuefield, nextfield):
@@ -411,6 +496,9 @@ def islol(table):
     return False
 
 
+def isatom(p): return type(p) == int or type(p) == float or type(p) == str
+
+
 def closure(p):
     """
     Find all nodes reachable from p and return a list of pointers to those reachable.
@@ -420,7 +508,7 @@ def closure(p):
 
 
 def closure_(p, visited):
-    if p is None or type(p)==int or type(p)==float:
+    if p is None or isatom(p):
         return []
     if id(p) in visited:
         return []
@@ -463,14 +551,12 @@ if __name__ == '__main__':
 
     head = Node('tombu')
     head = Node('parrt', head)
-    head = Node({3, 4}, head)
+    head = Node({1,2}, head)
     g = llistviz(head)
 
-    cl = closure({'a':head, 'b':99})
-    print '\n'.join([str(o) for o in cl])
-
-    # table = [[], [], [], []]
-    # lolviz(table)
+    table = [[3,4], ["aaa",5.3], head]
+    d = {'foo':table, 'bar':99}
+    g = objviz(d)
     # print "hashcode =", hashcode(key)
     # bucket_index = hashcode(key) % len(table)
     # print "bucket_index =", bucket_index
@@ -482,5 +568,5 @@ if __name__ == '__main__':
     # name = 'parrt'
     # s = [3, 9, 10]
     # t = {'a': 999, 'b': 1}
-    # print g.source
-    # g.render(view=True)
+    print g.source
+    g.render(view=True)
