@@ -230,26 +230,28 @@ digraph G {
             if caller_scopename == '<module>':
                 caller_scopename = 'globals'
             # varnames = [sym[0] for sym in frame.f_locals.items() if not ignoresym(sym)]
-            pairs = []
+            items = []
             for k,v in frame.f_locals.items():
                 if ignoresym((k,v)):
                     continue
                 if isatom(v):
-                    pairs.append((k,v))
+                    items.append((k,k,v))
                 else:
-                    pairs.append((k,None))
+                    items.append((k,k,None))
             s += '// DICT\n'
-            s += gr_dict_node(nodename, caller_scopename, pairs, bgcolor=BLUE)
+            s += gr_dict_node(nodename, caller_scopename, items, bgcolor=BLUE, separator=None, reprkey=False)
         elif type(p)==dict:
             print "DRAW DICT", p, '@ node' + nodename
-            pairs = []
+            items = []
+            i = 0
             for k,v in p.items():
                 if isatom(v):
-                    pairs.append((k,v))
+                    items.append((str(i),k,v))
                 else:
-                    pairs.append((k,None))
+                    items.append((str(i),k,None))
+                i += 1
             s += '// DICT\n'
-            s += gr_dict_node(nodename, None, pairs)
+            s += gr_dict_node(nodename, None, items)
         elif hasattr(p, "__iter__"):
             print "DRAW LIST", p, '@ node' + nodename
             elems = []
@@ -262,21 +264,21 @@ digraph G {
             s += gr_list_node(nodename, elems)
         elif hasattr(p,"__dict__"): # generic object
             print "DRAW OBJ", p, '@ node' + nodename
-            pairs = []
+            items = []
             for k,v in p.__dict__.items():
                 if isatom(v):
-                    pairs.append((k,v))
+                    items.append((k,k,v))
                 else:
-                    pairs.append((k,None))
+                    items.append((k,k,None))
             s += '// OBJECT with fields\n'
-            s += gr_dict_node(nodename, p.__class__.__name__, pairs)
+            s += gr_dict_node(nodename, p.__class__.__name__, items, separator=None, reprkey=False)
         else:
             print "CANNOT HANDLE: "+str(p)
 
     # define edges
     es = edges(reachable)
-    for (p,port,q) in es:
-        s += 'node%d:%s:c -> node%d [dir=both, tailclip=false, arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (id(p),port,id(q))
+    for (p,label,q) in es:
+        s += 'node%d:%s:c -> node%d [dir=both, tailclip=false, arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (id(p),label,id(q))
 
     s += "}\n"
     return graphviz.Source(s)
@@ -407,38 +409,36 @@ def gr_listtable_html(values):
     return header + '<tr>\n'+''.join(toprow)+'</tr>\n' + '<tr>\n'+''.join(bottomrow)+'</tr>' + tail
 
 
-def gr_dict_node(nodename, title, pairs, bgcolor=YELLOW):
-    html = gr_dict_html(title, pairs, bgcolor)
+def gr_dict_node(nodename, title, items, bgcolor=YELLOW, separator="&rarr;", reprkey=True):
+    html = gr_dict_html(title, items, bgcolor, separator, reprkey)
     return '%s [color="#444443", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="%s", label=<%s>];\n' % (nodename,bgcolor,html)
 
 
-def gr_dict_html(title, pairs, bgcolor=YELLOW):
+def gr_dict_html(title, items, bgcolor=YELLOW, separator="&rarr;", reprkey=True):
     header = '<table BORDER="0" CELLPADDING="0" CELLBORDER="1" CELLSPACING="0">\n'
 
     blankrow = '<tr><td cellpadding="1" border="0"></td></tr>'
 
     rows = []
     if title is not None:
-        title = '<tr><td cellspacing="0" colspan="2" cellpadding="0" bgcolor="%s" border="0" align="center"><font color="#444443" FACE="Times-Italic" point-size="11">%s</font></td></tr>\n' % (bgcolor, title)
+        title = '<tr><td cellspacing="0" colspan="3" cellpadding="0" bgcolor="%s" border="0" align="center"><font color="#444443" FACE="Times-Italic" point-size="11">%s</font></td></tr>\n' % (bgcolor, title)
         rows.append(title)
-    for key,value in pairs:
-        name = '<td cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="r" align="right"><font color="#444443" point-size="11">%s </font></td>\n' % (bgcolor,key)
+
+    for label,key,value in items:
+        if separator is not None:
+            name = '<td cellspacing="0" cellpadding="0" bgcolor="%s" border="0" align="right"><font color="#444443" point-size="11">%s </font></td>\n' % (bgcolor, repr(key) if reprkey else key)
+            sep = '<td cellpadding="0" border="0" valign="bottom"><font color="#444443" point-size="9">%s</font></td>' % separator
+        else:
+            name = '<td cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="r" align="right"><font color="#444443" point-size="11">%s </font></td>\n' % (bgcolor, repr(key) if reprkey else key)
+            sep = '<td cellspacing="0" cellpadding="0" border="0"></td>'
+
         if value is not None:
             v = repr(value)
         else:
             v = ""
-        value = '<td port="%s" cellspacing="0" cellpadding="1" bgcolor="%s" border="0" align="left"><font color="#444443" point-size="11"> %s</font></td>\n' % (key, bgcolor, v)
-        row = '<tr>' + name + value + '</tr>\n'
+        value = '<td port="%s" cellspacing="0" cellpadding="1" bgcolor="%s" border="0" align="left"><font color="#444443" point-size="11"> %s</font></td>\n' % (label, bgcolor, v)
+        row = '<tr>' + name + sep + value + '</tr>\n'
         rows.append(row)
-
-
-        # if value==None:
-        #     pair = "%s&rarr;" % repr(key)
-        # else:
-        #     pair = "%s&rarr;%s" % (repr(key), repr(value))
-        # html = '<td port="%s" cellspacing="0" cellpadding="0" bgcolor="#FBFEB0" border="0" valign="top" align="left"><font color="#444443" point-size="11">%s</font></td>\n' % (key,pair)
-        # row = '<tr>\n' + html + '</tr>\n'
-        # rows.append(row)
 
     tail = "</table>\n"
     return header + blankrow.join(rows) + tail
@@ -623,9 +623,11 @@ def edges(reachable):
                 if not ignoresym((k, v)) and not isatom(v) and v is not None:
                     edges.append( (p,k,v) )
         elif type(p)==dict:
+            i = 0
             for k,v in p.items():
                 if not isatom(v) and v is not None:
-                    edges.append( (p,k,v) )
+                    edges.append( (p,str(i),v) )
+                i += 1
         elif hasattr(p, "__iter__"):
             for i,el in enumerate(p):
                 if not isatom(el) and el is not None:
@@ -663,7 +665,7 @@ if __name__ == '__main__':
     # g = llistviz(head)
 
     table = [[3,4], ["aaa",5.3], head]
-    d = {'foo':table, 'bar':99}
+    d = {'super cool':table, 'bar':99}
     frame = sys._getframe(0)
     g = objviz(frame)
     # print "hashcode =", hashcode(key)
