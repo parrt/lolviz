@@ -218,7 +218,7 @@ digraph G {
                 if isatom(el):
                     elems.append(el)
                 else:
-                    elems.append(' ')
+                    elems.append(None)
             s += '// LIST or ITERATABLE\n'
             s += gr_list_node(nodename, elems)
         elif hasattr(p,"__dict__"): # generic object
@@ -358,11 +358,11 @@ def gr_listtable_html(values):
 
     lastindex = len(values) - 1
     toprow = [index_html % i for i in range(lastindex)]
-    bottomrow = [value_html % (i,values[i]) for i in range(lastindex)]
+    bottomrow = [value_html % (i,repr(values[i]) if values[i] is not None else ' ') for i in range(lastindex)]
 
     if len(values)>1:
         toprow.append(last_index_html % (lastindex))
-        bottomrow.append(last_value_html % (lastindex, values[lastindex]))
+        bottomrow.append(last_value_html % (lastindex, repr(values[lastindex]) if values[lastindex] is not None else ' '))
 
     tail = "</table>\n"
     return header + '<tr>\n'+''.join(toprow)+'</tr>\n' + '<tr>\n'+''.join(bottomrow)+'</tr>' + tail
@@ -383,7 +383,7 @@ def gr_dict_html(title, pairs, bgcolor=YELLOW):
         title = '<tr><td cellspacing="0" colspan="2" cellpadding="0" bgcolor="%s" border="0" align="center"><font color="#444443" FACE="Times-Italic" point-size="11">%s</font></td></tr>\n' % (bgcolor, title)
         rows.append(title)
     for key,value in pairs:
-        name = '<td cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="r" align="right"><font color="#444443" point-size="11">%s </font></td>\n' % (bgcolor,repr(key))
+        name = '<td cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="r" align="right"><font color="#444443" point-size="11">%s </font></td>\n' % (bgcolor,key)
         if value is not None:
             v = repr(value)
         else:
