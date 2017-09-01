@@ -13,7 +13,7 @@ import inspect
 import types
 import sys
 
-YELLOW = "#FBFEB0"
+YELLOW = "#fefecd" # "#fbfbd0" # "#FBFEB0"
 BLUE = "#D9E6F5"
 GREEN = "#bfd9c6"
 
@@ -464,34 +464,32 @@ def listtable_html(values, showassoc):
     return header + '<tr>\n'+''.join(toprow)+'</tr>\n' + '<tr>\n'+''.join(bottomrow)+'</tr>' + tail
 
 
-def gr_list_node(nodename, elems):
+def gr_list_node(nodename, elems, bgcolor=YELLOW):
     if len(elems)>0:
-        html = gr_listtable_html(elems)
+        html = gr_listtable_html(elems, bgcolor)
     else:
         html = " "
     return '%s [shape="box", space="0.0", margin="0.01", fontcolor="#444443", fontname="Helvetica", label=<%s>];\n' % (nodename,html)
 
 
-def gr_listtable_html(values):
+def gr_listtable_html(values, bgcolor=YELLOW):
     header = '<table BORDER="0" CELLBORDER="0" CELLSPACING="0">\n'
 
-    index_html = '<td cellspacing="0" cellpadding="0" bgcolor="#FBFEB0" border="1" sides="br" valign="top"><font color="#444443" point-size="9">%d</font></td>\n'
-    value_html = '<td port="%d" bgcolor="#FBFEB0" border="1" sides="r" align="center"><font point-size="11">%s</font></td>\n'
+    index_html = '<td cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="br" valign="top"><font color="#444443" point-size="9">%d</font></td>\n'
+    value_html = '<td port="%d" bgcolor="%s" border="1" sides="r" align="center"><font point-size="11">%s</font></td>\n'
     # don't want right border to show on last.
-    last_index_html = '<td cellspacing="0" cellpadding="0" bgcolor="#FBFEB0" border="1" sides="b" valign="top"><font color="#444443" point-size="9">%d</font></td>\n'
-    last_value_html = '<td port="%d" bgcolor="#FBFEB0" border="0" align="center"><font point-size="11">%s</font></td>\n'
+    last_index_html = '<td cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="b" valign="top"><font color="#444443" point-size="9">%d</font></td>\n'
+    last_value_html = '<td port="%d" bgcolor="%s" border="0" align="center"><font point-size="11">%s</font></td>\n'
 
     lastindex = len(values) - 1
-    toprow = [index_html % i for i in range(lastindex)]
-    bottomrow = [value_html % (i,repr(values[i]) if values[i] is not None else ' ') for i in range(lastindex)]
+    toprow = [index_html % (bgcolor,i) for i in range(lastindex)]
+    bottomrow = [value_html % (i,bgcolor,repr(values[i]) if values[i] is not None else ' ') for i in range(lastindex)]
 
     if len(values)>=1:
-        toprow.append(last_index_html % (lastindex))
-        bottomrow.append(last_value_html % (lastindex, repr(values[lastindex]) if values[lastindex] is not None else ' '))
+        toprow.append(last_index_html % (bgcolor,lastindex))
+        bottomrow.append(last_value_html % (lastindex, bgcolor,repr(values[lastindex]) if values[lastindex] is not None else ' '))
 
     tail = "</table>\n"
-    if len(''.join(toprow))==0:
-        print "WHAT?", values
     return header + '<tr>\n'+''.join(toprow)+'</tr>\n' + '<tr>\n'+''.join(bottomrow)+'</tr>' + tail
 
 
