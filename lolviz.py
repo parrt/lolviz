@@ -188,15 +188,30 @@ def lolviz(table, showassoc=True):
     return graphviz.Source(s)
 
 
-def varviz(frame=None, varnames=[]):
-    frame = sys._getframe(1)
+def callviz(frame=None, varnames=[]):
+    s = """
+    digraph G {
+        nodesep=.05;
+        rankdir=LR;
+        node [penwidth="0.5", shape=box, width=.1, height=.1];
+
+    """
+
+    frame = sys._getframe(1) # who called callviz()
     stack = inspect.stack()
     for i,s in enumerate(reversed(stack)):
         name = s[3]
         f = s[0]
         print "STACK", name
-    print stack
+
     return objviz(stack[0])
+    # reachable = closure(o)
+    # s += obj_nodes(reachable)
+    # s += obj_edges(reachable)
+    # s += "}\n"
+    # return graphviz.Source(s)
+
+    return objviz()
     # caller = stack[1]
     # caller_frame = caller[0]
     # scope = caller_frame.f_locals
@@ -234,70 +249,76 @@ def obj_nodes(nodes):
     s = ""
     # define nodes
     for p in nodes:
-        nodename = "node%d" % id(p)
-        if type(p) == types.FrameType:
-            frame = p
-            info = inspect.getframeinfo(frame)
-            caller_scopename = info[2]
-            if caller_scopename == '<module>':
-                caller_scopename = 'globals'
-            # varnames = [sym[0] for sym in frame.f_locals.items() if not ignoresym(sym)]
-            items = []
-            for k, v in frame.f_locals.items():
-                if ignoresym((k, v)):
-                    continue
-                if isatom(v):
-                    items.append((k, k, v))
-                else:
-                    items.append((k, k, None))
-            s += '// FRAME %s\n' % caller_scopename
-            s += gr_dict_node(nodename, caller_scopename, items, bgcolor=BLUE,
-                              separator=None, reprkey=False)
-        elif type(p) == dict:
-            print "DRAW DICT", p, '@ node' + nodename
-            items = []
-            i = 0
-            for k, v in p.items():
-                if isatom(v):
-                    items.append((str(i), k, v))
-                else:
-                    items.append((str(i), k, None))
-                i += 1
-            s += '// DICT\n'
-            s += gr_dict_node(nodename, None, items)
-        elif hasattr(p, "__iter__") and isatomlist(p):
-            print "DRAW LIST", p, '@ node' + nodename
-            elems = []
-            for el in p:
-                if isatom(el):
-                    elems.append(el)
-                else:
-                    elems.append(None)
-            s += '// LIST or ITERATABLE\n'
-            s += gr_list_node(nodename, elems)
-        elif hasattr(p, "__iter__"):
-            print "DRAW VERTICAL LIST", p, '@ node' + nodename
-            elems = []
-            for el in p:
-                if isatom(el):
-                    elems.append(el)
-                else:
-                    elems.append(None)
-            s += '// VERTICAL LIST or ITERATABLE\n'
-            s += gr_vlist_node(nodename, elems)
-        elif hasattr(p, "__dict__"):  # generic object
-            print "DRAW OBJ", p, '@ node' + nodename
-            items = []
-            for k, v in p.__dict__.items():
-                if isatom(v):
-                    items.append((k, k, v))
-                else:
-                    items.append((k, k, None))
-            s += '// %s OBJECT with fields\n' % p.__class__.__name__
-            s += gr_dict_node(nodename, p.__class__.__name__, items, separator=None,
-                              reprkey=False)
-        else:
-            print "CANNOT HANDLE: " + str(p)
+        s += obj_node(p)
+    return s
+
+
+def obj_node(p):
+    s = ""
+    nodename = "node%d" % id(p)
+    if type(p) == types.FrameType:
+        frame = p
+        info = inspect.getframeinfo(frame)
+        caller_scopename = info[2]
+        if caller_scopename == '<module>':
+            caller_scopename = 'globals'
+        # varnames = [sym[0] for sym in frame.f_locals.items() if not ignoresym(sym)]
+        items = []
+        for k, v in frame.f_locals.items():
+            if ignoresym((k, v)):
+                continue
+            if isatom(v):
+                items.append((k, k, v))
+            else:
+                items.append((k, k, None))
+        s += '// FRAME %s\n' % caller_scopename
+        s += gr_dict_node(nodename, caller_scopename, items, bgcolor=BLUE,
+                          separator=None, reprkey=False)
+    elif type(p) == dict:
+        print "DRAW DICT", p, '@ node' + nodename
+        items = []
+        i = 0
+        for k, v in p.items():
+            if isatom(v):
+                items.append((str(i), k, v))
+            else:
+                items.append((str(i), k, None))
+            i += 1
+        s += '// DICT\n'
+        s += gr_dict_node(nodename, None, items)
+    elif hasattr(p, "__iter__") and isatomlist(p):
+        print "DRAW LIST", p, '@ node' + nodename
+        elems = []
+        for el in p:
+            if isatom(el):
+                elems.append(el)
+            else:
+                elems.append(None)
+        s += '// LIST or ITERATABLE\n'
+        s += gr_list_node(nodename, elems)
+    elif hasattr(p, "__iter__"):
+        print "DRAW VERTICAL LIST", p, '@ node' + nodename
+        elems = []
+        for el in p:
+            if isatom(el):
+                elems.append(el)
+            else:
+                elems.append(None)
+        s += '// VERTICAL LIST or ITERATABLE\n'
+        s += gr_vlist_node(nodename, elems)
+    elif hasattr(p, "__dict__"):  # generic object
+        print "DRAW OBJ", p, '@ node' + nodename
+        items = []
+        for k, v in p.__dict__.items():
+            if isatom(v):
+                items.append((k, k, v))
+            else:
+                items.append((k, k, None))
+        s += '// %s OBJECT with fields\n' % p.__class__.__name__
+        s += gr_dict_node(nodename, p.__class__.__name__, items, separator=None,
+                          reprkey=False)
+    else:
+        print "CANNOT HANDLE: " + str(p)
     return s
 
 

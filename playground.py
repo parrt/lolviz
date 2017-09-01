@@ -18,7 +18,7 @@ class Node:
         self.next = next
 
 def f(x):
-    g = varviz()
+    g = callviz()
     print g.source
     g.render(view=True)
 
@@ -33,7 +33,7 @@ f(989)
 table = [[3,4], ["aaa",5.3]]
 d = {'super cool':table, 'bar':99}
 table.append(d)
-g = varviz()
+#g = callviz()
 # print "hashcode =", hashcode(key)
 # bucket_index = hashcode(key) % len(table)
 # print "bucket_index =", bucket_index
