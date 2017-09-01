@@ -15,11 +15,13 @@ class Node:
         self.value = value
         self.next = next
 
-def f(x,y):
+def g(x):
     g = callviz()
     print g.source
     g.render(view=True)
 
+def f(x,y):
+    g(y)
 
 head = Node('tombu')
 head = Node('parrt', head)

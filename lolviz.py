@@ -285,9 +285,19 @@ def obj_node(p):
         caller_scopename = info[2]
         if caller_scopename == '<module>':
             caller_scopename = 'globals'
+        argnames, _, _ = inspect.getargs(frame.f_code)
         # varnames = [sym[0] for sym in frame.f_locals.items() if not ignoresym(sym)]
         items = []
+        # do args first to get proper order
+        for arg in argnames:
+            v = frame.f_locals[arg]
+            if isatom(v):
+                items.append((arg, arg, v))
+            else:
+                items.append((arg, arg, None))
         for k, v in frame.f_locals.items():
+            if k in argnames:
+                continue
             if ignoresym((k, v)):
                 continue
             if isatom(v):
