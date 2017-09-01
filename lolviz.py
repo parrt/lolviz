@@ -15,7 +15,7 @@ import sys
 
 YELLOW = "#fefecd" # "#fbfbd0" # "#FBFEB0"
 BLUE = "#D9E6F5"
-GREEN = "#bfd9c6"
+GREEN = "#cfe2d4"
 
 def strviz(str):
     s = """
