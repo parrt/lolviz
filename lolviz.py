@@ -190,15 +190,20 @@ def lolviz(table, showassoc=True):
 
 
 def varviz(varnames=[]):
+    frame = sys._getframe(1)
     stack = inspect.stack()
-    caller = stack[1]
-    caller_frame = caller[0]
-    scope = caller_frame.f_locals
-    if varnames is None:
-        varnames = [sym[0] for sym in scope.items() if not ignoresym(sym)]
-    caller_scopename = caller[2]
-    if caller_scopename=='<module>':
-        caller_scopename = 'globals'
+    stack.indexof('<module>')
+    stack = [f for f in reversed(stack)]
+    print stack
+    return objviz(frame)
+    # caller = stack[1]
+    # caller_frame = caller[0]
+    # scope = caller_frame.f_locals
+    # if varnames is None:
+    #     varnames = [sym[0] for sym in scope.items() if not ignoresym(sym)]
+    # caller_scopename = caller[2]
+    # if caller_scopename=='<module>':
+    #     caller_scopename = 'globals'
 
 
 def ignoresym(sym):
@@ -639,10 +644,16 @@ def closure_(p, visited):
     visited.add(id(p))
     result = [p]
     if type(p) == types.FrameType:
+        frame = p
+        info = inspect.getframeinfo(frame)
         for k, v in frame.f_locals.items():
             if not ignoresym((k, v)):
                 cl = closure_(v, visited)
                 result.extend(cl)
+        caller_scopename = info[2]
+        if caller_scopename != '<module>': # stop at globals
+            cl = closure_(p.f_back, visited)
+            result.extend(cl)
     elif type(p)==dict:
         for q in p.values():
             cl = closure_(q, visited)
@@ -663,9 +674,14 @@ def edges(reachable):
     edges = []
     for p in reachable:
         if type(p) == types.FrameType:
-            for k, v in frame.f_locals.items():
+            frame = p
+            info = inspect.getframeinfo(frame)
+            for k, v in p.f_locals.items():
                 if not ignoresym((k, v)) and not isatom(v) and v is not None:
                     edges.append( (p,k,v) )
+            caller_scopename = info[2]
+            if caller_scopename != '<module>':  # stop at globals
+                edges.append( (p,'caller',p.f_back) )
         elif type(p)==dict:
             i = 0
             for k,v in p.items():
@@ -702,16 +718,23 @@ if __name__ == '__main__':
             self.value = value
             self.next = next
 
+    def f(x):
+        g = varviz()
+        print g.source
+        g.render(view=True)
+
 
     head = Node('tombu')
-    head = Node('parrt', head)
-    head = Node({1,2}, head)
+    # head = Node('parrt', head)
+    # head = Node({1,2}, head)
     # g = llistviz(head)
 
-    table = [[3,4], ["aaa",5.3], head]
+    f(989)
+
+    table = [[3,4], ["aaa",5.3]]
     d = {'super cool':table, 'bar':99}
-    frame = sys._getframe(0)
-    g = objviz(frame)
+    table.append(d)
+    g = varviz()
     # print "hashcode =", hashcode(key)
     # bucket_index = hashcode(key) % len(table)
     # print "bucket_index =", bucket_index
@@ -723,5 +746,3 @@ if __name__ == '__main__':
     # name = 'parrt'
     # s = [3, 9, 10]
     # t = {'a': 999, 'b': 1}
-    print g.source
-    g.render(view=True)
