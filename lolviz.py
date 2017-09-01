@@ -1,13 +1,12 @@
 """
 A small set of functions that display lists, dictionaries,
 and lists of lists in a reasonable manner using graphviz.
-Inspired by the object connectivity graphs in Pythontutor.com
-
-General notes / reminders to parrt:
-
-    Ugh. shape=record means html-labels can't use ports. warning!
-
-    warning: <td> and </td> must be on same line or row is super wide!
+Inspired by the object connectivity graphs in Pythontutor.com.
+I love Pythontutor.com for interactive demos with the students,
+but for expository material that must stand on its own, it's
+useful to freeze dry / snapshot various states of execution.
+Currently I have two cut-and-paste or awkwardly embed pythontutor
+into my notes.
 """
 import graphviz
 import inspect
@@ -189,13 +188,15 @@ def lolviz(table, showassoc=True):
     return graphviz.Source(s)
 
 
-def varviz(varnames=[]):
+def varviz(frame=None, varnames=[]):
     frame = sys._getframe(1)
     stack = inspect.stack()
-    stack.indexof('<module>')
-    stack = [f for f in reversed(stack)]
+    for i,s in enumerate(reversed(stack)):
+        name = s[3]
+        f = s[0]
+        print "STACK", name
     print stack
-    return objviz(frame)
+    return objviz(stack[0])
     # caller = stack[1]
     # caller_frame = caller[0]
     # scope = caller_frame.f_locals
@@ -419,11 +420,13 @@ def gr_listtable_html(values):
     toprow = [index_html % i for i in range(lastindex)]
     bottomrow = [value_html % (i,repr(values[i]) if values[i] is not None else ' ') for i in range(lastindex)]
 
-    if len(values)>1:
+    if len(values)>=1:
         toprow.append(last_index_html % (lastindex))
         bottomrow.append(last_value_html % (lastindex, repr(values[lastindex]) if values[lastindex] is not None else ' '))
 
     tail = "</table>\n"
+    if len(''.join(toprow))==0:
+        print "WHAT?", values
     return header + '<tr>\n'+''.join(toprow)+'</tr>\n' + '<tr>\n'+''.join(bottomrow)+'</tr>' + tail
 
 
@@ -468,6 +471,8 @@ def gr_vlist_node(nodename, elems, bgcolor=BLUE):
 
 
 def gr_vlist_html(elems, bgcolor=BLUE):
+    if len(elems)==0:
+        return " "
     header = '<table BORDER="0" CELLPADDING="0" CELLBORDER="0" CELLSPACING="0">\n'
 
     rows = []
@@ -697,52 +702,3 @@ def edges(reachable):
                 if not isatom(v) and v is not None:
                     edges.append( (p,k,v) )
     return edges
-
-
-if __name__ == '__main__':
-    key = 'a'
-    value = 99
-
-    def hashcode(o): return ord(o)  # assume keys are single-element strings
-
-
-    # test linked list node
-    class Node:
-        def __str__(self):
-            return "Node(%s,%s)" % (self.value, str(self.next))
-
-        def __repr__(self):
-            return str(self)
-
-        def __init__(self, value, next=None):
-            self.value = value
-            self.next = next
-
-    def f(x):
-        g = varviz()
-        print g.source
-        g.render(view=True)
-
-
-    head = Node('tombu')
-    # head = Node('parrt', head)
-    # head = Node({1,2}, head)
-    # g = llistviz(head)
-
-    f(989)
-
-    table = [[3,4], ["aaa",5.3]]
-    d = {'super cool':table, 'bar':99}
-    table.append(d)
-    g = varviz()
-    # print "hashcode =", hashcode(key)
-    # bucket_index = hashcode(key) % len(table)
-    # print "bucket_index =", bucket_index
-    # bucket = table[bucket_index]
-    # bucket.append((key, value))  # add association to the bucket
-    # lolviz(table)
-    # i = 3
-    # price = 9.4
-    # name = 'parrt'
-    # s = [3, 9, 10]
-    # t = {'a': 999, 'b': 1}
