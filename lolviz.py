@@ -223,13 +223,19 @@ digraph G {
     node [penwidth="0.5", shape=box, width=.1, height=.1];
     
 """
-
     reachable = closure(o)
+    s += obj_nodes(reachable)
+    s += obj_edges(reachable)
+    s += "}\n"
+    return graphviz.Source(s)
 
+
+def obj_nodes(nodes):
+    s = ""
     # define nodes
-    for p in reachable:
+    for p in nodes:
         nodename = "node%d" % id(p)
-        if type(p)==types.FrameType:
+        if type(p) == types.FrameType:
             frame = p
             info = inspect.getframeinfo(frame)
             caller_scopename = info[2]
@@ -237,24 +243,25 @@ digraph G {
                 caller_scopename = 'globals'
             # varnames = [sym[0] for sym in frame.f_locals.items() if not ignoresym(sym)]
             items = []
-            for k,v in frame.f_locals.items():
-                if ignoresym((k,v)):
+            for k, v in frame.f_locals.items():
+                if ignoresym((k, v)):
                     continue
                 if isatom(v):
-                    items.append((k,k,v))
+                    items.append((k, k, v))
                 else:
-                    items.append((k,k,None))
+                    items.append((k, k, None))
             s += '// FRAME %s\n' % caller_scopename
-            s += gr_dict_node(nodename, caller_scopename, items, bgcolor=BLUE, separator=None, reprkey=False)
-        elif type(p)==dict:
+            s += gr_dict_node(nodename, caller_scopename, items, bgcolor=BLUE,
+                              separator=None, reprkey=False)
+        elif type(p) == dict:
             print "DRAW DICT", p, '@ node' + nodename
             items = []
             i = 0
-            for k,v in p.items():
+            for k, v in p.items():
                 if isatom(v):
-                    items.append((str(i),k,v))
+                    items.append((str(i), k, v))
                 else:
-                    items.append((str(i),k,None))
+                    items.append((str(i), k, None))
                 i += 1
             s += '// DICT\n'
             s += gr_dict_node(nodename, None, items)
@@ -278,29 +285,36 @@ digraph G {
                     elems.append(None)
             s += '// VERTICAL LIST or ITERATABLE\n'
             s += gr_vlist_node(nodename, elems)
-        elif hasattr(p,"__dict__"): # generic object
+        elif hasattr(p, "__dict__"):  # generic object
             print "DRAW OBJ", p, '@ node' + nodename
             items = []
-            for k,v in p.__dict__.items():
+            for k, v in p.__dict__.items():
                 if isatom(v):
-                    items.append((k,k,v))
+                    items.append((k, k, v))
                 else:
-                    items.append((k,k,None))
+                    items.append((k, k, None))
             s += '// %s OBJECT with fields\n' % p.__class__.__name__
-            s += gr_dict_node(nodename, p.__class__.__name__, items, separator=None, reprkey=False)
+            s += gr_dict_node(nodename, p.__class__.__name__, items, separator=None,
+                              reprkey=False)
         else:
-            print "CANNOT HANDLE: "+str(p)
+            print "CANNOT HANDLE: " + str(p)
+    return s
 
-    # define edges
-    es = edges(reachable)
-    for (p,label,q) in es:
-        if type(p)!=types.FrameType and type(p)!=dict and hasattr(p, "__iter__") and not isatomlist(p):  # edges start at right edge not center for vertical lists
-            s += 'node%d:%s -> node%d [arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (id(p),label,id(q))
+
+def obj_edges(nodes):
+    s = ""
+    es = edges(nodes)
+    for (p, label, q) in es:
+        if type(p) != types.FrameType and type(p) != dict and hasattr(p,
+                                                                      "__iter__") and not isatomlist(
+            p):  # edges start at right edge not center for vertical lists
+            s += 'node%d:%s -> node%d [arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (
+            id(p), label, id(q))
         else:
-            s += 'node%d:%s:c -> node%d [dir=both, tailclip=false, arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (id(p),label,id(q))
+            s += 'node%d:%s:c -> node%d [dir=both, tailclip=false, arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (
+            id(p), label, id(q))
 
-    s += "}\n"
-    return graphviz.Source(s)
+    return s
 
 
 def lol_nodes(table, showassoc):
