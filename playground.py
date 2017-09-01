@@ -1,6 +1,4 @@
 from lolviz import *
-key = 'a'
-value = 99
 
 def hashcode(o): return ord(o)  # assume keys are single-element strings
 
@@ -17,18 +15,22 @@ class Node:
         self.value = value
         self.next = next
 
-def f(x):
+def f(x,y):
     g = callviz()
     print g.source
     g.render(view=True)
 
 
 head = Node('tombu')
-# head = Node('parrt', head)
-# head = Node({1,2}, head)
+head = Node('parrt', head)
+head = Node('foo', head)
 # g = llistviz(head)
 
-f(989)
+f(989,head)
+
+# g = callviz()
+# print g.source
+# g.render(view=True)
 
 table = [[3,4], ["aaa",5.3]]
 d = {'super cool':table, 'bar':99}

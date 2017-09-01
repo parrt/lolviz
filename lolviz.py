@@ -197,21 +197,44 @@ def callviz(frame=None, varnames=[]):
 
     """
 
-    frame = sys._getframe(1) # who called callviz()
+    # Get stack frame nodes so we can stack 'em up
     stack = inspect.stack()
-    for i,s in enumerate(reversed(stack)):
-        name = s[3]
-        f = s[0]
-        print "STACK", name
+    callstack = []
+    for i,st in enumerate(stack[1:]):
+        frame = st[0]
+        name = st[3]
+        callstack.append(frame)
+        if name=='<module>':
+            break
 
-    return objviz(stack[0])
-    # reachable = closure(o)
+    s += "\n{ rank=same;\n"
+    callstack = list(reversed(callstack))
+    for f in callstack:
+        s += obj_node(f)
+
+    for i in range(len(callstack)-1):
+        this = callstack[i]
+        callee = callstack[i+1]
+        s += 'node%d -> node%d [style=invis]\n' % (id(this), id(callee))
+    s += "}\n\n"
+
+    caller = stack[1]
+    reachable = closure(caller[0])
+
+    s += obj_nodes(reachable)
+    s += obj_edges(reachable)
+    s += obj_edges(callstack)
+    s += "}\n"
+
+    # print s
+    return graphviz.Source(s)
+
     # s += obj_nodes(reachable)
     # s += obj_edges(reachable)
     # s += "}\n"
     # return graphviz.Source(s)
 
-    return objviz()
+    # return objviz()
     # caller = stack[1]
     # caller_frame = caller[0]
     # scope = caller_frame.f_locals
@@ -326,14 +349,10 @@ def obj_edges(nodes):
     s = ""
     es = edges(nodes)
     for (p, label, q) in es:
-        if type(p) != types.FrameType and type(p) != dict and hasattr(p,
-                                                                      "__iter__") and not isatomlist(
-            p):  # edges start at right edge not center for vertical lists
-            s += 'node%d:%s -> node%d [arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (
-            id(p), label, id(q))
+        if type(p) != types.FrameType and type(p) != dict and hasattr(p,"__iter__") and not isatomlist(p):  # edges start at right edge not center for vertical lists
+            s += 'node%d:%s -> node%d [arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (id(p), label, id(q))
         else:
-            s += 'node%d:%s:c -> node%d [dir=both, tailclip=false, arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (
-            id(p), label, id(q))
+            s += 'node%d:%s:c -> node%d [dir=both, tailclip=false, arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (id(p), label, id(q))
 
     return s
 
@@ -671,7 +690,8 @@ def isatom(p): return type(p) == int or type(p) == float or type(p) == str
 def closure(p):
     """
     Find all nodes reachable from p and return a list of pointers to those reachable.
-    There can't be duplicates even for cyclic graphs due to visited set.
+    There can't be duplicates even for cyclic graphs due to visited set. Chase ptrs
+    from but don't include frame objects.
     """
     return closure_(p, set())
 
@@ -682,7 +702,9 @@ def closure_(p, visited):
     if id(p) in visited:
         return []
     visited.add(id(p))
-    result = [p]
+    result = []
+    if type(p) != types.FrameType:
+        result.append(p)
     if type(p) == types.FrameType:
         frame = p
         info = inspect.getframeinfo(frame)
@@ -715,13 +737,9 @@ def edges(reachable):
     for p in reachable:
         if type(p) == types.FrameType:
             frame = p
-            info = inspect.getframeinfo(frame)
-            for k, v in p.f_locals.items():
+            for k, v in frame.f_locals.items():
                 if not ignoresym((k, v)) and not isatom(v) and v is not None:
-                    edges.append( (p,k,v) )
-            caller_scopename = info[2]
-            if caller_scopename != '<module>':  # stop at globals
-                edges.append( (p,'caller',p.f_back) )
+                    edges.append( (frame,k,v) )
         elif type(p)==dict:
             i = 0
             for k,v in p.items():
