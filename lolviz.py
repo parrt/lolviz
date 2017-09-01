@@ -238,7 +238,7 @@ digraph G {
                     items.append((k,k,v))
                 else:
                     items.append((k,k,None))
-            s += '// DICT\n'
+            s += '// FRAME %s\n' % caller_scopename
             s += gr_dict_node(nodename, caller_scopename, items, bgcolor=BLUE, separator=None, reprkey=False)
         elif type(p)==dict:
             print "DRAW DICT", p, '@ node' + nodename
@@ -252,7 +252,7 @@ digraph G {
                 i += 1
             s += '// DICT\n'
             s += gr_dict_node(nodename, None, items)
-        elif hasattr(p, "__iter__"):
+        elif hasattr(p, "__iter__") and isatomlist(p):
             print "DRAW LIST", p, '@ node' + nodename
             elems = []
             for el in p:
@@ -262,6 +262,16 @@ digraph G {
                     elems.append(None)
             s += '// LIST or ITERATABLE\n'
             s += gr_list_node(nodename, elems)
+        elif hasattr(p, "__iter__"):
+            print "DRAW VERTICAL LIST", p, '@ node' + nodename
+            elems = []
+            for el in p:
+                if isatom(el):
+                    elems.append(el)
+                else:
+                    elems.append(None)
+            s += '// VERTICAL LIST or ITERATABLE\n'
+            s += gr_vlist_node(nodename, elems)
         elif hasattr(p,"__dict__"): # generic object
             print "DRAW OBJ", p, '@ node' + nodename
             items = []
@@ -270,7 +280,7 @@ digraph G {
                     items.append((k,k,v))
                 else:
                     items.append((k,k,None))
-            s += '// OBJECT with fields\n'
+            s += '// %s OBJECT with fields\n' % p.__class__.__name__
             s += gr_dict_node(nodename, p.__class__.__name__, items, separator=None, reprkey=False)
         else:
             print "CANNOT HANDLE: "+str(p)
@@ -278,7 +288,10 @@ digraph G {
     # define edges
     es = edges(reachable)
     for (p,label,q) in es:
-        s += 'node%d:%s:c -> node%d [dir=both, tailclip=false, arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (id(p),label,id(q))
+        if type(p)!=types.FrameType and type(p)!=dict and hasattr(p, "__iter__") and not isatomlist(p):  # edges start at right edge not center for vertical lists
+            s += 'node%d:%s -> node%d [arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (id(p),label,id(q))
+        else:
+            s += 'node%d:%s:c -> node%d [dir=both, tailclip=false, arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (id(p),label,id(q))
 
     s += "}\n"
     return graphviz.Source(s)
@@ -411,7 +424,7 @@ def gr_listtable_html(values):
 
 def gr_dict_node(nodename, title, items, bgcolor=YELLOW, separator="&rarr;", reprkey=True):
     html = gr_dict_html(title, items, bgcolor, separator, reprkey)
-    return '%s [color="#444443", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="%s", label=<%s>];\n' % (nodename,bgcolor,html)
+    return '%s [margin="0.03", color="#444443", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="%s", label=<%s>];\n' % (nodename,bgcolor,html)
 
 
 def gr_dict_html(title, items, bgcolor=YELLOW, separator="&rarr;", reprkey=True):
@@ -421,7 +434,7 @@ def gr_dict_html(title, items, bgcolor=YELLOW, separator="&rarr;", reprkey=True)
 
     rows = []
     if title is not None:
-        title = '<tr><td cellspacing="0" colspan="3" cellpadding="0" bgcolor="%s" border="0" align="center"><font color="#444443" FACE="Times-Italic" point-size="11">%s</font></td></tr>\n' % (bgcolor, title)
+        title = '<tr><td cellspacing="0" colspan="3" cellpadding="0" bgcolor="%s" border="1" sides="b" align="center"><font color="#444443" FACE="Times-Italic" point-size="11">%s</font></td></tr>\n' % (bgcolor, title)
         rows.append(title)
 
     for label,key,value in items:
@@ -442,6 +455,27 @@ def gr_dict_html(title, items, bgcolor=YELLOW, separator="&rarr;", reprkey=True)
 
     tail = "</table>\n"
     return header + blankrow.join(rows) + tail
+
+
+def gr_vlist_node(nodename, elems, bgcolor=BLUE):
+    html = gr_vlist_html(elems, bgcolor)
+    return '%s [color="#444443", margin="0.02", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="%s", label=<%s>];\n' % (nodename,bgcolor,html)
+
+
+def gr_vlist_html(elems, bgcolor=BLUE):
+    header = '<table BORDER="0" CELLPADDING="0" CELLBORDER="0" CELLSPACING="0">\n'
+
+    rows = []
+    for i,el in enumerate(elems):
+        sides = 'BORDER="1" sides="b" cellpadding="0"'
+        if i==len(elems)-1:
+            sides='BORDER="0" cellpadding="1"'
+        value = '<td port="%d" cellspacing="0" %s bgcolor="%s" align="left"><font color="#444443" point-size="9">%s</font></td>\n' % (i, sides, bgcolor, str(i))
+        row = '<tr>' + value + '</tr>\n'
+        rows.append(row)
+
+    tail = "</table>\n"
+    return header + ''.join(rows) + tail
 
 
 def llistnode_html(nodevalue, valuefield, nextfield):
@@ -568,12 +602,22 @@ def idx_elviz(idx, el, showassoc):
     return label_elviz(str(idx), el, showassoc)
 
 
-def islol(table):
-    if type(table)!=list: return False
-    for x in table:
-        if type(x)==list or type(x)==tuple:
-            return True
-    return False
+def islol(elems):
+    if type(elems)!=list:
+        return False
+    for x in elems:
+        if type(x)!=list and type(x)!=tuple and type(elems)!=set:
+            return False
+    return True
+
+
+def isatomlist(elems):
+    if type(elems)!=list and type(elems)!=tuple and type(elems)!=set:
+        return False
+    for x in elems:
+        if not isatom(x):
+            return False
+    return True
 
 
 def isatom(p): return type(p) == int or type(p) == float or type(p) == str
@@ -664,7 +708,7 @@ if __name__ == '__main__':
     head = Node({1,2}, head)
     # g = llistviz(head)
 
-    table = [[3,4], ["aaa",5.3], head]
+    table = [[3,4], ["aaa",5.3], ['x','y','z']]
     d = {'super cool':table, 'bar':99}
     frame = sys._getframe(0)
     g = objviz(frame)
