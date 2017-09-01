@@ -87,13 +87,13 @@ treeviz(root, value=lambda t:t[0], left=lambda t:t[1], right=lambda t:t[2])
 
 ## Implementation notes
 
-### graphviz
+### Graphviz
 
 * Ugh. `shape=record` means html-labels can't use ports. warning!
 
 * warning: `<td>` and `</td>` must be on same line or row is super wide!
     
-### deploy
+### Deploy
 
 ```bash
 $ python setup.py sdist upload 
