@@ -85,3 +85,19 @@ treeviz(root, value=lambda t:t[0], left=lambda t:t[1], right=lambda t:t[2])
 
 <img src="images/tree3.png" width=140>
 
+## Implementation notes
+
+### graphviz
+
+### deploy
+
+```bash
+$ python setup.py sdist upload 
+```
+
+Or to install locally
+
+```bash
+$ cd ~/github/lolviz
+$ pip install .
+```
