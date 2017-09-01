@@ -404,10 +404,10 @@ def gr_list_node(nodename, elems):
 def gr_listtable_html(values):
     header = '<table BORDER="0" CELLBORDER="0" CELLSPACING="0">\n'
 
-    index_html = '<td cellspacing="0" bgcolor="#FBFEB0" border="1" sides="br" valign="top"><font color="#444443" point-size="9">%d</font></td>\n'
+    index_html = '<td cellspacing="0" cellpadding="0" bgcolor="#FBFEB0" border="1" sides="br" valign="top"><font color="#444443" point-size="9">%d</font></td>\n'
     value_html = '<td port="%d" bgcolor="#FBFEB0" border="1" sides="r" align="center"><font point-size="11">%s</font></td>\n'
     # don't want right border to show on last.
-    last_index_html = '<td cellspacing="0" bgcolor="#FBFEB0" border="1" sides="b" valign="top"><font color="#444443" point-size="9">%d</font></td>\n'
+    last_index_html = '<td cellspacing="0" cellpadding="0" bgcolor="#FBFEB0" border="1" sides="b" valign="top"><font color="#444443" point-size="9">%d</font></td>\n'
     last_value_html = '<td port="%d" bgcolor="#FBFEB0" border="0" align="center"><font point-size="11">%s</font></td>\n'
 
     lastindex = len(values) - 1
@@ -448,7 +448,7 @@ def gr_dict_html(title, items, bgcolor=YELLOW, separator="&rarr;", reprkey=True)
         if value is not None:
             v = repr(value)
         else:
-            v = ""
+            v = "   "
         value = '<td port="%s" cellspacing="0" cellpadding="1" bgcolor="%s" border="0" align="left"><font color="#444443" point-size="11"> %s</font></td>\n' % (label, bgcolor, v)
         row = '<tr>' + name + sep + value + '</tr>\n'
         rows.append(row)
@@ -708,7 +708,7 @@ if __name__ == '__main__':
     head = Node({1,2}, head)
     # g = llistviz(head)
 
-    table = [[3,4], ["aaa",5.3], ['x','y','z']]
+    table = [[3,4], ["aaa",5.3], head]
     d = {'super cool':table, 'bar':99}
     frame = sys._getframe(0)
     g = objviz(frame)
