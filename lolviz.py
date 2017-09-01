@@ -15,6 +15,7 @@ import sys
 
 YELLOW = "#FBFEB0"
 BLUE = "#D9E6F5"
+GREEN = "#bfd9c6"
 
 def strviz(str):
     s = """
@@ -532,12 +533,12 @@ def gr_dict_html(title, items, highlight=None, bgcolor=YELLOW, separator="&rarr;
     return header + blankrow.join(rows) + tail
 
 
-def gr_vlist_node(nodename, elems, bgcolor=BLUE):
+def gr_vlist_node(nodename, elems, bgcolor=GREEN):
     html = gr_vlist_html(elems, bgcolor)
     return '%s [color="#444443", margin="0.02", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="%s", label=<%s>];\n' % (nodename,bgcolor,html)
 
 
-def gr_vlist_html(elems, bgcolor=BLUE):
+def gr_vlist_html(elems, bgcolor=GREEN):
     if len(elems)==0:
         return " "
     header = '<table BORDER="0" CELLPADDING="0" CELLBORDER="0" CELLSPACING="0">\n'
