@@ -16,12 +16,18 @@ class Node:
         self.next = next
 
 def g(x):
+    s = "hi"
     g = callviz()
     print g.source
     g.render(view=True)
 
 def f(x,y):
+    t = "mom"
     g(y)
+
+table = [[3,4], ["aaa",5.3]]
+d = {'super cool':table, 'bar':99}
+table.append(d)
 
 head = Node('tombu')
 head = Node('parrt', head)
@@ -34,9 +40,6 @@ f(989,head)
 # print g.source
 # g.render(view=True)
 
-table = [[3,4], ["aaa",5.3]]
-d = {'super cool':table, 'bar':99}
-table.append(d)
 #g = callviz()
 # print "hashcode =", hashcode(key)
 # bucket_index = hashcode(key) % len(table)

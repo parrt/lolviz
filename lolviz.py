@@ -305,7 +305,7 @@ def obj_node(p):
             else:
                 items.append((k, k, None))
         s += '// FRAME %s\n' % caller_scopename
-        s += gr_dict_node(nodename, caller_scopename, items, bgcolor=BLUE,
+        s += gr_dict_node(nodename, caller_scopename, items, highlight=argnames, bgcolor=BLUE,
                           separator=None, reprkey=False)
     elif type(p) == dict:
         print "DRAW DICT", p, '@ node' + nodename
@@ -494,12 +494,12 @@ def gr_listtable_html(values):
     return header + '<tr>\n'+''.join(toprow)+'</tr>\n' + '<tr>\n'+''.join(bottomrow)+'</tr>' + tail
 
 
-def gr_dict_node(nodename, title, items, bgcolor=YELLOW, separator="&rarr;", reprkey=True):
-    html = gr_dict_html(title, items, bgcolor, separator, reprkey)
+def gr_dict_node(nodename, title, items, highlight=None, bgcolor=YELLOW, separator="&rarr;", reprkey=True):
+    html = gr_dict_html(title, items, highlight, bgcolor, separator, reprkey)
     return '%s [margin="0.03", color="#444443", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="%s", label=<%s>];\n' % (nodename,bgcolor,html)
 
 
-def gr_dict_html(title, items, bgcolor=YELLOW, separator="&rarr;", reprkey=True):
+def gr_dict_html(title, items, highlight=None, bgcolor=YELLOW, separator="&rarr;", reprkey=True):
     header = '<table BORDER="0" CELLPADDING="0" CELLBORDER="1" CELLSPACING="0">\n'
 
     blankrow = '<tr><td cellpadding="1" border="0"></td></tr>'
@@ -510,11 +510,14 @@ def gr_dict_html(title, items, bgcolor=YELLOW, separator="&rarr;", reprkey=True)
         rows.append(title)
 
     for label,key,value in items:
+        font = "Helvetica"
+        if highlight is not None and key in highlight:
+            font = "Times-Italic"
         if separator is not None:
-            name = '<td cellspacing="0" cellpadding="0" bgcolor="%s" border="0" align="right"><font color="#444443" point-size="11">%s </font></td>\n' % (bgcolor, repr(key) if reprkey else key)
+            name = '<td cellspacing="0" cellpadding="0" bgcolor="%s" border="0" align="right"><font face="%s" color="#444443" point-size="11">%s </font></td>\n' % (bgcolor, font, repr(key) if reprkey else key)
             sep = '<td cellpadding="0" border="0" valign="bottom"><font color="#444443" point-size="9">%s</font></td>' % separator
         else:
-            name = '<td cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="r" align="right"><font color="#444443" point-size="11">%s </font></td>\n' % (bgcolor, repr(key) if reprkey else key)
+            name = '<td cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="r" align="right"><font face="%s" color="#444443" point-size="11">%s </font></td>\n' % (bgcolor, font, repr(key) if reprkey else key)
             sep = '<td cellspacing="0" cellpadding="0" border="0"></td>'
 
         if value is not None:
