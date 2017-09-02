@@ -214,6 +214,10 @@ def callviz(frame=None, varnames=[]):
     for f in callstack:
         s += obj_node(f)
 
+    for i in range(len(callstack)-1):
+        this = callstack[i]
+        callee = callstack[i+1]
+        s += 'node%d -> node%d [style=invis]\n' % (id(this), id(callee))
     s += "}\n\n"
 
     caller = stack[1]
