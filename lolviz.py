@@ -193,6 +193,7 @@ def callviz(frame=None, varnames=[]):
     s = """
     digraph G {
         nodesep=.05;
+        ranksep=.3;
         rankdir=LR;
         node [penwidth="0.5", shape=box, width=.1, height=.1];
 
@@ -213,10 +214,6 @@ def callviz(frame=None, varnames=[]):
     for f in callstack:
         s += obj_node(f)
 
-    for i in range(len(callstack)-1):
-        this = callstack[i]
-        callee = callstack[i+1]
-        s += 'node%d -> node%d [style=invis]\n' % (id(this), id(callee))
     s += "}\n\n"
 
     caller = stack[1]
