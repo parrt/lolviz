@@ -12,6 +12,7 @@ import graphviz
 import inspect
 import types
 import sys
+from collections import defaultdict
 
 YELLOW = "#fefecd" # "#fbfbd0" # "#FBFEB0"
 BLUE = "#D9E6F5"
@@ -199,7 +200,7 @@ def callviz(frame=None, varnames=None):
         stack = inspect.stack()
         frame = stack[1][0]
 
-    return callsviz([frame])
+    return callsviz([frame], varnames)
 
 
 def callsviz(callstack=None, varnames=None):
@@ -223,6 +224,7 @@ def callsviz(callstack=None, varnames=None):
             if name=='<module>':
                 break
 
+    # Draw all stack frame nodes together so we can use rank=same
     s += "\n{ rank=same;\n"
     callstack = list(reversed(callstack))
     for f in callstack:
@@ -234,10 +236,30 @@ def callsviz(callstack=None, varnames=None):
         s += 'node%d -> node%d [style=invis]\n' % (id(this), id(callee))
     s += "}\n\n"
 
+    # find all reachable objects
     caller = callstack[0]
     reachable = closure(caller, varnames)
 
-    s += obj_nodes(reachable)
+    # organize nodes by connected_subgraphs so we can cluster
+    subgraphs = connected_subgraphs(caller, varnames)
+    c = 1
+    for g in subgraphs:
+        s += 'subgraph cluster%d {penwidth=.7 pencolor="%s"\n' % (c,GREEN)
+        s += obj_nodes(g)
+        s += "\n}\n"
+        c += 1
+
+    # now dump disconnected nodes
+    for p in reachable:
+        found = False
+        for g in subgraphs:
+            if id(p) in g:
+                found = True
+                break
+        if not found:
+            s += obj_node(p, varnames)
+
+    # s += obj_nodes(reachable)
     s += obj_edges(reachable)
     s += obj_edges(callstack, varnames)
     s += "}\n"
@@ -248,8 +270,7 @@ def callsviz(callstack=None, varnames=None):
 def ignoresym(sym):
     return sym[0].startswith('_') or\
            callable(sym[1]) or\
-           isinstance(sym[1], types.ModuleType) or \
-           repr(sym[1]).startswith('<')
+           isinstance(sym[1], types.ModuleType)
 
 
 def objviz(o):
@@ -703,6 +724,12 @@ def isatomlist(elems):
 def isatom(p): return type(p) == int or type(p) == float or type(p) == str
 
 
+def isplainobj(p): return type(p) != types.FrameType and \
+                          type(p) != dict and \
+                          not hasattr(p,"__iter__") and \
+                          hasattr(p, "__dict__")
+
+
 def closure(p, varnames=None):
     """
     Find all nodes reachable from p and return a list of pointers to those reachable.
@@ -749,27 +776,96 @@ def closure_(p, varnames, visited):
 
 
 def edges(reachable, varnames=None):
-    "Return list of (p, port-in-p, q)"
+    "Return list of (p, port-in-p, q) for all p in reachable node list"
     edges = []
     for p in reachable:
-        if type(p) == types.FrameType:
-            frame = p
-            for k, v in frame.f_locals.items():
-                if varnames is not None and k not in varnames: continue
-                if not ignoresym((k, v)) and not isatom(v) and v is not None:
-                    edges.append( (frame,k,v) )
-        elif type(p)==dict:
-            i = 0
-            for k,v in p.items():
-                if not isatom(v) and v is not None:
-                    edges.append( (p,str(i),v) )
-                i += 1
-        elif hasattr(p, "__iter__"):
-            for i,el in enumerate(p):
-                if not isatom(el) and el is not None:
-                    edges.append( (p,str(i),el) )
-        elif hasattr(p,"__dict__"):
-            for k,v in p.__dict__.items():
-                if not isatom(v) and v is not None:
-                    edges.append( (p,k,v) )
+        edges.extend( node_edges(p, varnames) )
     return edges
+
+
+def node_edges(p, varnames=None):
+    "Return list of (p, port-in-p, q) for all ptrs in p"
+    edges = []
+    if type(p) == types.FrameType:
+        frame = p
+        for k, v in frame.f_locals.items():
+            if varnames is not None and k not in varnames: continue
+            if not ignoresym((k, v)) and not isatom(v) and v is not None:
+                edges.append((frame, k, v))
+    elif type(p) == dict:
+        i = 0
+        for k, v in p.items():
+            if not isatom(v) and v is not None:
+                edges.append((p, str(i), v))
+            i += 1
+    elif hasattr(p, "__iter__"):
+        for i, el in enumerate(p):
+            if not isatom(el) and el is not None:
+                edges.append((p, str(i), el))
+    elif hasattr(p, "__dict__"):
+        for k, v in p.__dict__.items():
+            if not isatom(v) and v is not None:
+                edges.append((p, k, v))
+    return edges
+
+
+def connected_subgraphs(reachable, varnames=None):
+    """
+    Find all connected subgraphs of same type. Return a list
+    of sets containing the id()s of all nodes in a specific subgraph
+    """
+    reachable = closure(reachable, varnames)
+    subgraphs = [] # list of sets of obj id()s
+    subgraphobjs = [] # list of sets of obj ptrs (parallel list to track objs since can't hash on obj as key)
+    for p in reachable:
+        if not isplainobj(p):
+            continue
+        edges = node_edges(p, varnames)
+        for e in edges:
+            q = e[2]
+            if type(p) == type(q):
+                # search for an existing subgraph
+                found = False
+                for i in range(len(subgraphs)):
+                    g = subgraphs[i]
+                    go = subgraphobjs[i]
+                    if id(p) in g or id(q) in g:
+                        found = True
+                        g.update({id(p), id(q)})
+                        go.extend([p, q])
+                if not found:
+                    subgraphs.append({id(p),id(q)})
+                    subgraphobjs.append([p, q])
+
+    return subgraphobjs
+
+
+def max_edges_connected_subgraphs(reachable, varnames=None):
+    """
+    Return mapping from node class to max num edges connecting
+    nodes of that same type. Ignores all but isplainobj() nodes.
+    Ignores any node type w/o edges connecting to same type.
+
+    The keys indicate the set of types (class def objects)
+    that are involved in connected subgraphs.
+
+    Max == 1 indicates possible linked list
+    whereas max == 2 indicates possible binary tree.
+    """
+    max_edges_for_type = defaultdict(int)
+    reachable = closure(reachable, varnames)
+    for p in reachable:
+        if not isplainobj(p):
+            continue
+        edges = node_edges(p, varnames)
+        m = 0
+        for e in edges:
+            q = e[2]
+            if type(p) == type(q):
+                m += 1
+                print("CONNECTED",p,q)
+        if m>0:
+            max_edges_for_type[p.__class__] = max(max_edges_for_type[p.__class__], m)
+
+    print(max_edges_for_type)
+    return max_edges_for_type

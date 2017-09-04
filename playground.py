@@ -15,6 +15,16 @@ class Node:
         self.value = value
         self.next = next
 
+class User:
+    def __init__(self, name):
+        self.name = name
+
+class Tree:
+    def __init__(self, value, left=None, right=None):
+        self.value = value
+        self.left = left
+        self.right = right
+
 def g(x):
     s = "hi"
     # g = callsviz(varnames=['head'])
@@ -25,6 +35,13 @@ def f(x,y):
     t = "mom"
     g(y)
 
+root = Tree('parrt',
+            Tree('mary',
+                 Tree('jim',
+                      Tree('srinivasan'),
+                      Tree('april'))),
+            Tree('xue',None,Tree('mike')))
+
 table = [[3,4], ["aaa",5.3]]
 d = {'super cool':table, 'bar':99}
 table.append(d)
@@ -32,12 +49,18 @@ table.append(d)
 head = Node('tombu')
 head = Node('parrt', head)
 head = Node('foo', head)
+
+h = Node('blort', Node(head))
+
 # g = llistviz(head)
 
-f(989,head)
+x = [User('name'+str(i)) for i in range(3)]
 
-g = callviz()
-print g.source
+# f(989,head)
+
+print root
+g = callviz()#varnames=['head'])
+# print g.source
 g.render(view=True)
 
 #g = callviz()
