@@ -206,8 +206,8 @@ def callviz(frame=None, varnames=None):
 def callsviz(callstack=None, varnames=None):
     s = """
     digraph G {
-        nodesep=.05;
-        ranksep=.3;
+        nodesep=.10;
+        ranksep=.20;
         rankdir=LR;
         node [penwidth="0.5", shape=box, width=.1, height=.1];
 
@@ -241,13 +241,16 @@ def callsviz(callstack=None, varnames=None):
     reachable = closure(caller, varnames)
 
     # organize nodes by connected_subgraphs so we can cluster
-    subgraphs = connected_subgraphs(caller, varnames)
+    # currently only making subgraph cluster for linked lists
+    # otherwise it squishes trees.
+    max_edges_for_type,subgraphs = connected_subgraphs(caller, varnames)
     c = 1
     for g in subgraphs:
-        s += 'subgraph cluster%d {penwidth=.7 pencolor="%s"\n' % (c,GREEN)
-        s += obj_nodes(g)
-        s += "\n}\n"
-        c += 1
+        if max_edges_for_type[g[0].__class__]==1:
+            s += 'subgraph cluster%d {penwidth=.7 pencolor="%s"\n' % (c,GREEN)
+            s += obj_nodes(g)
+            s += "\n}\n"
+            c += 1
 
     # now dump disconnected nodes
     for p in reachable:
@@ -814,7 +817,7 @@ def connected_subgraphs(reachable, varnames=None):
     Find all connected subgraphs of same type and same fieldname. Return a list
     of sets containing the id()s of all nodes in a specific subgraph
     """
-    max_edges = max_edges_connected_subgraphs(reachable, varnames)
+    max_edges_for_type = max_edges_in_connected_subgraphs(reachable, varnames)
 
     reachable = closure(reachable, varnames)
     subgraphs = [] # list of sets of obj id()s
@@ -829,7 +832,7 @@ def connected_subgraphs(reachable, varnames=None):
             q = e[2]
             if type(p) == type(q):
                 # ensure that singly-linked nodes use same field
-                if max_edges[p.__class__]==1 and p.__class__.__name__ in type_fieldname_map:
+                if max_edges_for_type[p.__class__]==1 and p.__class__.__name__ in type_fieldname_map:
                     prev_fieldname = type_fieldname_map[p.__class__.__name__]
                     if fieldname!=prev_fieldname:
                         continue
@@ -848,10 +851,10 @@ def connected_subgraphs(reachable, varnames=None):
                     subgraphs.append({id(p),id(q)})
                     subgraphobjs.append([p, q])
 
-    return subgraphobjs
+    return max_edges_for_type,subgraphobjs
 
 
-def max_edges_connected_subgraphs(reachable, varnames=None):
+def max_edges_in_connected_subgraphs(reachable, varnames=None):
     """
     Return mapping from node class to max num edges connecting
     nodes of that same type. Ignores all but isplainobj() nodes.
@@ -880,3 +883,9 @@ def max_edges_connected_subgraphs(reachable, varnames=None):
 
     print(max_edges_for_type)
     return max_edges_for_type
+
+
+"""JUNK
+from subprocess import check_call
+check_call(['dot','-Tpng','InputFile.dot','-o','OutputFile.png'])
+"""
