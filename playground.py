@@ -17,9 +17,9 @@ class Node:
 
 def g(x):
     s = "hi"
-    g = callsviz(varnames=['head','d'])
-    print g.source
-    g.render(view=True)
+    # g = callsviz(varnames=['head'])
+    # print g.source
+    # g.render(view=True)
 
 def f(x,y):
     t = "mom"
@@ -36,9 +36,9 @@ head = Node('foo', head)
 
 f(989,head)
 
-# g = callviz()
-# print g.source
-# g.render(view=True)
+g = callviz()
+print g.source
+g.render(view=True)
 
 #g = callviz()
 # print "hashcode =", hashcode(key)

@@ -234,8 +234,8 @@ def callsviz(callstack=None, varnames=None):
         s += 'node%d -> node%d [style=invis]\n' % (id(this), id(callee))
     s += "}\n\n"
 
-    caller = stack[1]
-    reachable = closure(caller[0], varnames)
+    caller = callstack[0]
+    reachable = closure(caller, varnames)
 
     s += obj_nodes(reachable)
     s += obj_edges(reachable)
@@ -515,10 +515,10 @@ def gr_dict_html(title, items, highlight=None, bgcolor=YELLOW, separator="&rarr;
             if highlight is not None and key in highlight:
                 font = "Times-Italic"
             if separator is not None:
-                name = '<td cellspacing="0" cellpadding="0" bgcolor="%s" border="0" align="right"><font face="%s" color="#444443" point-size="11">%s </font></td>\n' % (bgcolor, font, repr(key) if reprkey else key)
+                name = '<td port="%s_label" cellspacing="0" cellpadding="0" bgcolor="%s" border="0" align="right"><font face="%s" color="#444443" point-size="11">%s </font></td>\n' % (label, bgcolor, font, repr(key) if reprkey else key)
                 sep = '<td cellpadding="0" border="0" valign="bottom"><font color="#444443" point-size="9">%s</font></td>' % separator
             else:
-                name = '<td cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="r" align="right"><font face="%s" color="#444443" point-size="11">%s </font></td>\n' % (bgcolor, font, repr(key) if reprkey else key)
+                name = '<td port="%s_label" cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="r" align="right"><font face="%s" color="#444443" point-size="11">%s </font></td>\n' % (label, bgcolor, font, repr(key) if reprkey else key)
                 sep = '<td cellspacing="0" cellpadding="0" border="0"></td>'
 
             if value is not None:
