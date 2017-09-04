@@ -17,7 +17,7 @@ class Node:
 
 def g(x):
     s = "hi"
-    g = callviz()
+    g = callsviz(varnames=['head','d'])
     print g.source
     g.render(view=True)
 

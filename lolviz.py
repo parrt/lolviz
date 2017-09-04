@@ -189,7 +189,20 @@ def lolviz(table, showassoc=True):
     return graphviz.Source(s)
 
 
-def callviz(frame=None, varnames=[]):
+def callviz(frame=None, varnames=None):
+    """
+    Visualize one call stack frame. If frame is None, viz
+    caller of callviz()'s frame. Restrict to varnames if
+    not None.
+    """
+    if frame is None:
+        stack = inspect.stack()
+        frame = stack[1][0]
+
+    return callsviz([frame])
+
+
+def callsviz(callstack=None, varnames=None):
     s = """
     digraph G {
         nodesep=.05;
@@ -200,19 +213,20 @@ def callviz(frame=None, varnames=[]):
     """
 
     # Get stack frame nodes so we can stack 'em up
-    stack = inspect.stack()
-    callstack = []
-    for i,st in enumerate(stack[1:]):
-        frame = st[0]
-        name = st[3]
-        callstack.append(frame)
-        if name=='<module>':
-            break
+    if callstack is None:
+        stack = inspect.stack()
+        callstack = []
+        for i,st in enumerate(stack[1:]):
+            frame = st[0]
+            name = st[3]
+            callstack.append(frame)
+            if name=='<module>':
+                break
 
     s += "\n{ rank=same;\n"
     callstack = list(reversed(callstack))
     for f in callstack:
-        s += obj_node(f)
+        s += obj_node(f, varnames)
 
     for i in range(len(callstack)-1):
         this = callstack[i]
@@ -221,30 +235,14 @@ def callviz(frame=None, varnames=[]):
     s += "}\n\n"
 
     caller = stack[1]
-    reachable = closure(caller[0])
+    reachable = closure(caller[0], varnames)
 
     s += obj_nodes(reachable)
     s += obj_edges(reachable)
-    s += obj_edges(callstack)
+    s += obj_edges(callstack, varnames)
     s += "}\n"
 
-    # print s
     return graphviz.Source(s)
-
-    # s += obj_nodes(reachable)
-    # s += obj_edges(reachable)
-    # s += "}\n"
-    # return graphviz.Source(s)
-
-    # return objviz()
-    # caller = stack[1]
-    # caller_frame = caller[0]
-    # scope = caller_frame.f_locals
-    # if varnames is None:
-    #     varnames = [sym[0] for sym in scope.items() if not ignoresym(sym)]
-    # caller_scopename = caller[2]
-    # if caller_scopename=='<module>':
-    #     caller_scopename = 'globals'
 
 
 def ignoresym(sym):
@@ -278,7 +276,7 @@ def obj_nodes(nodes):
     return s
 
 
-def obj_node(p):
+def obj_node(p, varnames=None):
     s = ""
     nodename = "node%d" % id(p)
     if type(p) == types.FrameType:
@@ -288,16 +286,17 @@ def obj_node(p):
         if caller_scopename == '<module>':
             caller_scopename = 'globals'
         argnames, _, _ = inspect.getargs(frame.f_code)
-        # varnames = [sym[0] for sym in frame.f_locals.items() if not ignoresym(sym)]
         items = []
         # do args first to get proper order
         for arg in argnames:
+            if varnames is not None and arg not in varnames: continue
             v = frame.f_locals[arg]
             if isatom(v):
                 items.append((arg, arg, v))
             else:
                 items.append((arg, arg, None))
         for k, v in frame.f_locals.items():
+            if varnames is not None and k not in varnames: continue
             if k in argnames:
                 continue
             if ignoresym((k, v)):
@@ -314,6 +313,7 @@ def obj_node(p):
         items = []
         i = 0
         for k, v in p.items():
+            if varnames is not None and k not in varnames: continue
             if isatom(v):
                 items.append((str(i), k, v))
             else:
@@ -357,9 +357,9 @@ def obj_node(p):
     return s
 
 
-def obj_edges(nodes):
+def obj_edges(nodes, varnames=None):
     s = ""
-    es = edges(nodes)
+    es = edges(nodes, varnames)
     for (p, label, q) in es:
         if type(p) != types.FrameType and type(p) != dict and hasattr(p,"__iter__") and not isatomlist(p):  # edges start at right edge not center for vertical lists
             s += 'node%d:%s -> node%d [arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (id(p), label, id(q))
@@ -509,24 +509,27 @@ def gr_dict_html(title, items, highlight=None, bgcolor=YELLOW, separator="&rarr;
         title = '<tr><td cellspacing="0" colspan="3" cellpadding="0" bgcolor="%s" border="1" sides="b" align="center"><font color="#444443" FACE="Times-Italic" point-size="11">%s</font></td></tr>\n' % (bgcolor, title)
         rows.append(title)
 
-    for label,key,value in items:
-        font = "Helvetica"
-        if highlight is not None and key in highlight:
-            font = "Times-Italic"
-        if separator is not None:
-            name = '<td cellspacing="0" cellpadding="0" bgcolor="%s" border="0" align="right"><font face="%s" color="#444443" point-size="11">%s </font></td>\n' % (bgcolor, font, repr(key) if reprkey else key)
-            sep = '<td cellpadding="0" border="0" valign="bottom"><font color="#444443" point-size="9">%s</font></td>' % separator
-        else:
-            name = '<td cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="r" align="right"><font face="%s" color="#444443" point-size="11">%s </font></td>\n' % (bgcolor, font, repr(key) if reprkey else key)
-            sep = '<td cellspacing="0" cellpadding="0" border="0"></td>'
+    if len(items)>0:
+        for label,key,value in items:
+            font = "Helvetica"
+            if highlight is not None and key in highlight:
+                font = "Times-Italic"
+            if separator is not None:
+                name = '<td cellspacing="0" cellpadding="0" bgcolor="%s" border="0" align="right"><font face="%s" color="#444443" point-size="11">%s </font></td>\n' % (bgcolor, font, repr(key) if reprkey else key)
+                sep = '<td cellpadding="0" border="0" valign="bottom"><font color="#444443" point-size="9">%s</font></td>' % separator
+            else:
+                name = '<td cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="r" align="right"><font face="%s" color="#444443" point-size="11">%s </font></td>\n' % (bgcolor, font, repr(key) if reprkey else key)
+                sep = '<td cellspacing="0" cellpadding="0" border="0"></td>'
 
-        if value is not None:
-            v = repr(value)
-        else:
-            v = "   "
-        value = '<td port="%s" cellspacing="0" cellpadding="1" bgcolor="%s" border="0" align="left"><font color="#444443" point-size="11"> %s</font></td>\n' % (label, bgcolor, v)
-        row = '<tr>' + name + sep + value + '</tr>\n'
-        rows.append(row)
+            if value is not None:
+                v = repr(value)
+            else:
+                v = "   "
+            value = '<td port="%s" cellspacing="0" cellpadding="1" bgcolor="%s" border="0" align="left"><font color="#444443" point-size="11"> %s</font></td>\n' % (label, bgcolor, v)
+            row = '<tr>' + name + sep + value + '</tr>\n'
+            rows.append(row)
+    else:
+        rows.append('<tr><td cellspacing="0" cellpadding="0" border="0"><font point-size="9"> ... </font></td></tr>\n')
 
     tail = "</table>\n"
     return header + blankrow.join(rows) + tail
@@ -700,16 +703,16 @@ def isatomlist(elems):
 def isatom(p): return type(p) == int or type(p) == float or type(p) == str
 
 
-def closure(p):
+def closure(p, varnames=None):
     """
     Find all nodes reachable from p and return a list of pointers to those reachable.
     There can't be duplicates even for cyclic graphs due to visited set. Chase ptrs
     from but don't include frame objects.
     """
-    return closure_(p, set())
+    return closure_(p, varnames, set())
 
 
-def closure_(p, visited):
+def closure_(p, varnames, visited):
     if p is None or isatom(p):
         return []
     if id(p) in visited:
@@ -722,35 +725,37 @@ def closure_(p, visited):
         frame = p
         info = inspect.getframeinfo(frame)
         for k, v in frame.f_locals.items():
+            if varnames is not None and k not in varnames: continue
             if not ignoresym((k, v)):
-                cl = closure_(v, visited)
+                cl = closure_(v, varnames, visited)
                 result.extend(cl)
         caller_scopename = info[2]
         if caller_scopename != '<module>': # stop at globals
-            cl = closure_(p.f_back, visited)
+            cl = closure_(p.f_back, varnames, visited)
             result.extend(cl)
     elif type(p)==dict:
-        for q in p.values():
-            cl = closure_(q, visited)
+        for k,q in p.items():
+            cl = closure_(q, varnames, visited)
             result.extend(cl)
     elif hasattr(p, "__dict__"): # regular object like Tree or Node
-        for q in p.__dict__.values():
-            cl = closure_(q, visited)
+        for k,q in p.__dict__.items():
+            cl = closure_(q, varnames, visited)
             result.extend(cl)
     elif hasattr(p, "__iter__"): # a list or similar
         for q in p:
-            cl = closure_(q, visited)
+            cl = closure_(q, varnames, visited)
             result.extend(cl)
     return result
 
 
-def edges(reachable):
+def edges(reachable, varnames=None):
     "Return list of (p, port-in-p, q)"
     edges = []
     for p in reachable:
         if type(p) == types.FrameType:
             frame = p
             for k, v in frame.f_locals.items():
+                if varnames is not None and k not in varnames: continue
                 if not ignoresym((k, v)) and not isatom(v) and v is not None:
                     edges.append( (frame,k,v) )
         elif type(p)==dict:
