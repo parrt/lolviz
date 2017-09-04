@@ -24,12 +24,12 @@ $ pip install lolviz
 
 ## Usage
 
-From within generic Python, you can get a window to pop up using the `render()` method:
+From within generic Python, you can get a window to pop up using the `view()` method:
 
 ```python
 from lolviz import *
 g = listviz(['hi','mom',{3,4},{"parrt":"user"}])
-g.render(view=True) # render graphviz.files.Source object
+g.view() # render and show graphviz.files.Source object
 ```
 
 <img src="images/list.png" width=200>
