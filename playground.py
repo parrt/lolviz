@@ -61,7 +61,8 @@ x = [User('name'+str(i)) for i in range(3)]
 print root
 g = callviz()#varnames=['head'])
 # print g.source
-g.render(view=True)
+# g.view(cleanup=True)
+g.render('lolviz', view=True, cleanup=True)
 
 #g = callviz()
 # print "hashcode =", hashcode(key)

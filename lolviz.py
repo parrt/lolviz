@@ -811,19 +811,30 @@ def node_edges(p, varnames=None):
 
 def connected_subgraphs(reachable, varnames=None):
     """
-    Find all connected subgraphs of same type. Return a list
+    Find all connected subgraphs of same type and same fieldname. Return a list
     of sets containing the id()s of all nodes in a specific subgraph
     """
+    max_edges = max_edges_connected_subgraphs(reachable, varnames)
+
     reachable = closure(reachable, varnames)
     subgraphs = [] # list of sets of obj id()s
     subgraphobjs = [] # list of sets of obj ptrs (parallel list to track objs since can't hash on obj as key)
+    type_fieldname_map = {}
     for p in reachable:
         if not isplainobj(p):
             continue
         edges = node_edges(p, varnames)
         for e in edges:
+            fieldname = e[1]
             q = e[2]
             if type(p) == type(q):
+                # ensure that singly-linked nodes use same field
+                if max_edges[p.__class__]==1 and p.__class__.__name__ in type_fieldname_map:
+                    prev_fieldname = type_fieldname_map[p.__class__.__name__]
+                    if fieldname!=prev_fieldname:
+                        continue
+                else:
+                    type_fieldname_map[p.__class__.__name__] = fieldname
                 # search for an existing subgraph
                 found = False
                 for i in range(len(subgraphs)):
