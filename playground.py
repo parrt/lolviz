@@ -78,6 +78,9 @@ x = [User('name'+str(i)) for i in range(3)]
 
 f(989,head)
 
+# head2 = ('parrt',('mary',None))
+# objviz(head2).view()
+
 # print(root)
 # g = callsviz()
 

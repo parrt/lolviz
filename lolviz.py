@@ -320,7 +320,7 @@ def obj_node(p, varnames=None):
         s += gr_dict_node(nodename, None, items)
     elif type(p)==list and len(p)==0: # special case "empty list"
         s += 'node%d [margin="0.03", shape=none label=<<font face="Times-Italic" color="#444443" point-size="9">empty list</font>>];\n' % id(p)
-    elif hasattr(p, "__iter__") and isatomlist(p):
+    elif hasattr(p, "__iter__") and isatomlist(p) or type(p)==tuple:
         # print "DRAW LIST", p, '@ node' + nodename
         elems = []
         for el in p:
@@ -340,7 +340,7 @@ def obj_node(p, varnames=None):
                 elems.append(None)
         s += '// VERTICAL LIST or ITERATABLE\n'
         s += gr_vlist_node(nodename, elems)
-    elif hasattr(p, "__dict__"):  # generic object
+    elif hasattr(p, "__dict__"): # generic object
         # print "DRAW OBJ", p, '@ node' + nodename
         items = []
         for k, v in p.__dict__.items():
@@ -360,7 +360,7 @@ def obj_edges(nodes, varnames=None):
     s = ""
     es = edges(nodes, varnames)
     for (p, label, q) in es:
-        if type(p) != types.FrameType and type(p) != dict and hasattr(p,"__iter__") and not isatomlist(p):  # edges start at right edge not center for vertical lists
+        if type(p) != types.FrameType and type(p) != dict and type(p) != tuple and hasattr(p,"__iter__") and not isatomlist(p):  # edges start at right edge not center for vertical lists
             s += 'node%d:%s -> node%d:w [arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (id(p), label, id(q))
         else:
             s += 'node%d:%s:c -> node%d [dir=both, tailclip=false, arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (id(p), label, id(q))
