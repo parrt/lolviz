@@ -27,13 +27,16 @@ class Tree:
 
 def g(x):
     s = "hi"
-    g = callsviz(varnames=None)
-    print g.source
-    g.view()
+    # g = callsviz(varnames=None)
+    # print g.source
+    # g.view()
 
 def f(x,y):
     t = "mom"
     g(y)
+
+table = [ [], [], [], [], [] ]
+objviz(table).view()
 
 root = Tree('parrt',
             Tree('mary',

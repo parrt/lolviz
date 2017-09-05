@@ -344,6 +344,8 @@ def obj_node(p, varnames=None):
             i += 1
         s += '// DICT\n'
         s += gr_dict_node(nodename, None, items)
+    elif type(p)==list and len(p)==0: # special case "empty list"
+        s += 'node%d [margin="0.03", shape=none label=<<font face="Times-Italic" color="#444443" point-size="9">empty list</font>>];\n' % id(p)
     elif hasattr(p, "__iter__") and isatomlist(p):
         # print "DRAW LIST", p, '@ node' + nodename
         elems = []
@@ -716,6 +718,8 @@ def islol(elems):
 
 def isatomlist(elems):
     if type(elems)!=list and type(elems)!=tuple and type(elems)!=set:
+        return False
+    if len(elems)==0: # empty lists are not atom lists
         return False
     for x in elems:
         if not isatom(x):
