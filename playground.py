@@ -27,9 +27,9 @@ class Tree:
 
 def g(x):
     s = "hi"
-    # g1 = callsviz(varnames=None)
-    # print g1.source
-    # g1.view()
+    g1 = callsviz(varnames=None)
+    print g1.source
+    g1.view()
 
 def f(x,y):
     t = "mom"
@@ -47,9 +47,10 @@ bucket.append( (key,value) ) # add association to the bucket
 bucket.append( (key+'x',value+100) ) # add association to the bucket
 table[4].append( [9,8,7,6] )
 
-g2 = lolviz(table)
-print g2.source
-g2.view()
+# g2 = lolviz(table)
+# g2 = strviz('parrt')
+# print g2.source
+# g2.view()
 
 root = Tree('parrt',
             Tree('mary',
@@ -67,6 +68,9 @@ head = Node('parrt', head)
 head = Node('foo', head)
 
 h = Node('blort', Node(head))
+
+# objviz(root).view()
+# lolviz(bucket).view()
 
 # g = llistviz(head)
 

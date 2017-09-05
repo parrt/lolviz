@@ -11,24 +11,22 @@ into my notes.
 import graphviz
 import inspect
 import types
-import sys
 from collections import defaultdict
-from subprocess import check_call
 
 
 YELLOW = "#fefecd" # "#fbfbd0" # "#FBFEB0"
 BLUE = "#D9E6F5"
 GREEN = "#cfe2d4"
 
-def strviz(str):
+def strviz(astring):
     s = """
     digraph G {
         nodesep=.05;
         rankdir=LR;
-        node [penwidth="0.5", width=.1,height=.1];
+        node [shape=box, penwidth="0.5"];
     """
 
-    s += string_node(str)
+    s += string_node(astring)
 
     s += '}\n'
     return graphviz.Source(s)
@@ -68,48 +66,6 @@ def listviz(elems, showassoc=True):
     return graphviz.Source(s)
 
 
-def llistviz(head,
-             valuefield='value', nextfield='next',
-             value=None, next=None): # lambda/functions to obtain value/next fields
-    """
-    Display a linked list in a horizontal fashion. The fields/attributes
-    obtained via getattr() are assumed to be 'value' and 'next' but you
-    can passing different names, if you like.  You can also pass in
-    lambdas or functions that indicate how to get the node's value or next
-    fields. The default is to define value to get field valuefield,
-    similar for next.
-    """
-    if value is None:
-        value = lambda p : getattr(p,valuefield)
-    if next is None:
-        next = lambda p : getattr(p,nextfield)
-    s = """
-    digraph G {
-        nodesep=.05;
-        rankdir=LR;
-        ranksep=.2;
-        node [shape=box, penwidth="0.5",width=.1,height=.1];
-    """
-    p = head
-    i = 0
-    edges = []
-    while p is not None:
-        html = llistnode_html(value(p), valuefield, nextfield)
-        if next(p) is not None:
-            edges.append( (i,i+1) )
-        p = next(p)
-        s += '    node%d [space="0.0", margin="0.01", fontcolor="#444443", fontname="Helvetica", label=<%s>];\n' % (i,html)
-        i += 1
-
-    # draw edges
-    for e in edges:
-        s += 'node%d:next:c -> node%d:value [dir=both, tailclip=false, arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % e
-
-    s += "}\n"
-    # print s
-    return graphviz.Source(s)
-
-
 def treeviz(root,
             valuefield='value', leftfield='left', rightfield='right',
             value=None, left=None, right=None): # lambda/functions to obtain value/left/right fields
@@ -123,7 +79,7 @@ def treeviz(root,
 
     nodes = []
     def treewalk(t):
-        "Walk recursively to make a list of node definitions. Return the next node number"
+        """Walk recursively to make a list of node definitions. Return the next node number"""
         if t is None: return
         html = treenode_html(value(t), leftfield, rightfield)
         nodes.append('    node%d [space="0.0", margin="0.01", fontcolor="#444443", fontname="Helvetica", label=<%s>];\n' % (id(t), html))
@@ -200,37 +156,6 @@ def lolviz(table, showassoc=True):
     return graphviz.Source(s)
 
 
-def lolviz_old(table, showassoc=True):
-    """
-    Given a list of lists such as:
-
-      [ [('a','3')], [], [('b',230), ('c',21)] ]
-
-    return the dot/graphviz to display as a two-dimensional
-    structure.
-
-    If showassoc, display 2-tuples (x,y) as x->y.
-    """
-    if not islol(table):
-        return listviz(table, showassoc)
-
-    s = """
-    digraph G {
-        nodesep=.05;
-        rankdir=LR;
-        node [penwidth="0.5", width=.1,height=.1];
-    """
-
-    reachable = closure(table)
-    nodes,edges = obj_nodes(reachable)
-    s += ''.join(nodes.values())
-    s += ''.join(edges)
-
-    s += "}\n"
-    # print s
-    return graphviz.Source(s)
-
-
 def callviz(frame=None, varnames=None):
     """
     Visualize one call stack frame. If frame is None, viz
@@ -281,30 +206,7 @@ def callsviz(callstack=None, varnames=None):
     caller = callstack[0]
     reachable = closure(caller, varnames)
 
-    # organize nodes by connected_subgraphs so we can cluster
-    # currently only making subgraph cluster for linked lists
-    # otherwise it squishes trees.
-    max_edges_for_type,subgraphs = connected_subgraphs(caller, varnames)
-    c = 1
-    for g in subgraphs:
-        firstelement = g[0]
-        if max_edges_for_type[firstelement.__class__]==1: # linked list
-            s += 'subgraph cluster%d {style=invis penwidth=.7 pencolor="%s"\n' % (c,GREEN)
-            s += obj_nodes(g)
-            s += "\n}\n"
-            c += 1
-        elif max_edges_for_type[firstelement.__class__]==2: # binary tree
-            s += obj_nodes(g) # nothing special for now
-
-    # now dump disconnected nodes
-    for p in reachable:
-        found = False
-        for g in subgraphs:
-            if p in g:
-                found = True
-                break
-        if not found:
-            s += obj_node(p, varnames)
+    s += obj_nodes(reachable)
 
     s += obj_edges(reachable)
     s += obj_edges(callstack, varnames)
@@ -323,7 +225,8 @@ def objviz(o):
     """Draw an arbitrary object graph."""
     s = """
 digraph G {
-    nodesep=.05;
+    nodesep=.1;
+    ranksep=.3;
     rankdir=LR;
     node [penwidth="0.5", shape=box, width=.1, height=.1];
     
@@ -337,8 +240,36 @@ digraph G {
 
 def obj_nodes(nodes):
     s = ""
+
+    # organize nodes by connected_subgraphs so we can cluster
+    # currently only making subgraph cluster for linked lists
+    # otherwise it squishes trees.
+    max_edges_for_type,subgraphs = connected_subgraphs(nodes)
+    c = 1
+    for g in subgraphs:
+        firstelement = g[0]
+        if max_edges_for_type[firstelement.__class__]==1: # linked list
+            s += 'subgraph cluster%d {style=invis penwidth=.7 pencolor="%s"\n' % (c,GREEN)
+            for p in g:
+                s += obj_node(p)
+            s += "\n}\n"
+            c += 1
+        elif max_edges_for_type[firstelement.__class__]==2: # binary tree
+            for p in g:
+                s += obj_node(p) # nothing special for now
+
+    # now dump disconnected nodes
     for p in nodes:
-        s += obj_node(p)
+        found = False
+        for g in subgraphs:
+            if p in g:
+                found = True
+                break
+        if not found:
+            s += obj_node(p)
+
+    # for p in nodes:
+    #     s += obj_node(p)
     return s
 
 
@@ -430,48 +361,11 @@ def obj_edges(nodes, varnames=None):
     es = edges(nodes, varnames)
     for (p, label, q) in es:
         if type(p) != types.FrameType and type(p) != dict and hasattr(p,"__iter__") and not isatomlist(p):  # edges start at right edge not center for vertical lists
-            s += 'node%d:%s -> node%d [arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (id(p), label, id(q))
+            s += 'node%d:%s -> node%d:w [arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (id(p), label, id(q))
         else:
             s += 'node%d:%s:c -> node%d [dir=both, tailclip=false, arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (id(p), label, id(q))
 
     return s
-
-
-def lol_nodes(table, showassoc):
-    """
-    Create and return a dictionary mapping node name to graphviz code for that node.
-    Also return a list of edges connecting the outer list to the inner lists.
-    """
-    nodes = {}
-    s = ""
-    # Make outer list as vertical
-    labels = []
-    for i in range(len(table)):
-        labels.append("<f%d> %d" % (i, i))
-    s = 'node%d [margin=0.01, shape=record, color="#444443", fontsize="9", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="%s", label = "%s"];\n' % (id(table), GREEN, '|'.join(labels))
-    nodes['node%d'%id(table)] = s
-    # define inner lists
-    for i in range(len(table)):
-        bucket = table[i]
-        if bucket == None:
-            continue
-        if (type(bucket) == list or type(bucket) == tuple) and len(bucket) == 0:
-            s = 'node%d [margin="0.03", shape=none label=<<font face="Times-Italic" color="#444443" point-size="9">empty list</font>>];\n' % id(bucket)
-        elif type(bucket) == list or type(bucket) == tuple and len(bucket) > 0:
-            s = list_node(bucket, showassoc)
-        else:
-            s = 'node%d [color="#444443", fontname="Helvetica", margin="0.01", space="0.0", label=<{%s}>];\n' % (id(bucket), elviz(bucket, showassoc))
-        nodes['node%d' % id(bucket)] = s
-
-    # Do edges
-    edges = []
-    for i in range(len(table)):
-        bucket = table[i]
-        if bucket == None:
-            continue
-        s = 'node%d:f%d -> node%d:w [penwidth="0.5", color="#444443", arrowsize=.4]\n' % (id(table), i, id(bucket))
-        edges.append(s)
-    return nodes, edges
 
 
 def elviz(el, showassoc):
@@ -526,7 +420,7 @@ def listtable_html(values, showassoc):
     toprow = [index_html % i for i in range(lastindex)]
     bottomrow = [value_html % (i,elviz(values[i],showassoc)) for i in range(lastindex)]
 
-    toprow.append(last_index_html % (lastindex))
+    toprow.append(last_index_html % lastindex)
     bottomrow.append(last_value_html % (lastindex, elviz(values[lastindex], showassoc)))
 
     tail = "</table>\n"
@@ -618,28 +512,12 @@ def gr_vlist_html(elems, bgcolor=GREEN):
         sides = 'BORDER="1" sides="b" cellpadding="1"'
         if i==len(elems)-1:
             sides='BORDER="0" cellpadding="2"'
-        value = '<td port="%d" cellspacing="0" %s bgcolor="%s" align="left"><font color="#444443" point-size="9">%s</font></td>\n' % (i, sides, bgcolor, str(i))
+        value = '<td port="%d" cellspacing="0" %s bgcolor="%s" align="left"><font color="#444443" point-size="9"> %s </font></td>\n' % (i, sides, bgcolor, str(i))
         row = '<tr>' + value + '</tr>\n'
         rows.append(row)
 
     tail = "</table>\n"
     return header + ''.join(rows) + tail
-
-
-def llistnode_html(nodevalue, valuefield, nextfield):
-    return \
-        """
-        <table BORDER="0" CELLBORDER="1" CELLSPACING="0">
-          <tr>
-            <td cellspacing="0" bgcolor="#FBFEB0" border="1" sides="br" valign="top"><font color="#444443" point-size="9">%s</font></td>
-            <td cellspacing="0" bgcolor="#D9E6F5" border="1" sides="b" valign="top"><font color="#444443" point-size="9">%s</font></td>
-          </tr>
-          <tr>
-            <td port="value" bgcolor="#FBFEB0" border="1" sides="r" align="center"><font point-size="11">%s</font></td>
-            <td port="next" bgcolor="#D9E6F5" border="0" align="center"><font point-size="11">%s</font></td>
-          </tr>
-        </table>
-        """ % (valuefield, nextfield, elviz(nodevalue, True), ' ')
 
 
 def scopetable_html(scopename, names, values, color="#D9E6F5"):
@@ -716,18 +594,15 @@ def treenode_html(nodevalue, leftfield, rightfield):
 
 def string_node(s):
     html = string_html(s)
-    return '    node%d [color="#444443", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="#FBFEB0", label=<%s>];\n' % (id(s),html)
+    return '    node%d [width=0,height=0, color="#444443", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="#FBFEB0", label=<%s>];\n' % (id(s),html)
 
 
 def string_html(s):
     values = list(s)
-    header = \
-        """
-        <table BORDER="0" CELLPADDING="0" CELLBORDER="0" CELLSPACING="0">
-        """
+    header = '<table BORDER="0" CELLPADDING="0" CELLBORDER="0" CELLSPACING="0">\n'
 
     index_html = '<td cellspacing="0" cellpadding="0" bgcolor="#FBFEB0" border="1" sides="br" valign="top"><font color="#444443" point-size="9">%d</font></td>\n'
-    value_html = '<td cellspacing="0" cellpadding="0" port="%d" bgcolor="#FBFEB0" border="0" align="center"><font face="Monaco" point-size="11">%s</font></td>\n'
+    value_html = '<td port="%d" cellspacing="0" cellpadding="0" bgcolor="#FBFEB0" border="0" align="center"><font face="Monaco" point-size="11">%s</font></td>\n'
     # don't want right border to show on last.
     last_index_html = '<td cellspacing="0" cellpadding="0" bgcolor="#FBFEB0" border="1" sides="b" valign="top"><font color="#444443" point-size="9">%d</font></td>\n'
     last_value_html = '<td port="%d" cellspacing="0" cellpadding="0" bgcolor="#FBFEB0" border="0" align="center"><font face="Monaco" point-size="11">%s</font></td>\n'
@@ -736,13 +611,10 @@ def string_html(s):
     toprow = [index_html % i for i in range(lastindex)]
     bottomrow = [value_html % (i,values[i]) for i in range(lastindex)]
 
-    toprow.append(last_index_html % (lastindex))
+    toprow.append(last_index_html % lastindex)
     bottomrow.append(last_value_html % (lastindex, values[lastindex]))
 
-    tail = \
-        """
-        </table>
-        """
+    tail = "</table>\n"
     return header + '<tr><td></td>\n'+''.join(toprow)+'<td></td></tr>\n' + '<tr><td>\'</td>\n'+''.join(bottomrow)+'<td>\'</td></tr>' + tail
 
 
@@ -825,7 +697,7 @@ def closure_(p, varnames, visited):
 
 
 def edges(reachable, varnames=None):
-    "Return list of (p, port-in-p, q) for all p in reachable node list"
+    """Return list of (p, port-in-p, q) for all p in reachable node list"""
     edges = []
     for p in reachable:
         edges.extend( node_edges(p, varnames) )
@@ -833,7 +705,7 @@ def edges(reachable, varnames=None):
 
 
 def node_edges(p, varnames=None):
-    "Return list of (p, port-in-p, q) for all ptrs in p"
+    """Return list of (p, port-in-p, q) for all ptrs in p"""
     edges = []
     if type(p) == types.FrameType:
         frame = p
@@ -927,9 +799,9 @@ def max_edges_in_connected_subgraphs(reachable, varnames=None):
             q = e[2]
             if type(p) == type(q):
                 m += 1
-                print("CONNECTED",p,q)
+                # print("CONNECTED",p,q)
         if m>0:
             max_edges_for_type[p.__class__] = max(max_edges_for_type[p.__class__], m)
 
-    print(max_edges_for_type)
+    # print(max_edges_for_type)
     return max_edges_for_type
