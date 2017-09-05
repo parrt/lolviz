@@ -187,13 +187,13 @@ def lolviz(table, showassoc=True):
     for sublist in sublists:
         nodename = "node%d" % id(sublist)
         if len(sublist)==0:
-            s += 'node%d [margin="0.03", shape=none label=<<font face="Times-Italic" color="#444443" point-size="9">empty list</font>>];\n' % id(sublist)
+            s += 'node%d [margin="0.01", shape=none label=<<font face="Times-Italic" color="#444443" point-size="9">empty list</font>>];\n' % id(sublist)
         else:
             s += gr_list_node(nodename, sublist)
 
     i = 0
     for sublist in sublists:
-        s += 'node%d:%s -> node%d [arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (id(table), str(i), id(sublist))
+        s += 'node%d:%s -> node%d:w [arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (id(table), str(i), id(sublist))
         i += 1
 
     s += "}\n"
