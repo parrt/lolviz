@@ -66,7 +66,11 @@ def listviz(elems, showassoc=True):
     return graphviz.Source(s)
 
 
-def treeviz(root,
+def treeviz(root):
+    return objviz(root, orientation="TD")
+
+
+def treeviz_old(root,
             valuefield='value', leftfield='left', rightfield='right',
             value=None, left=None, right=None): # lambda/functions to obtain value/left/right fields
 
@@ -221,16 +225,16 @@ def ignoresym(sym):
            isinstance(sym[1], types.ModuleType)
 
 
-def objviz(o):
+def objviz(o, orientation="LR"):
     """Draw an arbitrary object graph."""
     s = """
 digraph G {
     nodesep=.1;
     ranksep=.3;
-    rankdir=LR;
+    rankdir=%s;
     node [penwidth="0.5", shape=box, width=.1, height=.1];
     
-"""
+""" % orientation
     reachable = closure(o)
     s += obj_nodes(reachable)
     s += obj_edges(reachable)
