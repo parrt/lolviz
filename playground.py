@@ -27,9 +27,9 @@ class Tree:
 
 def g(x):
     s = "hi"
-    # g = callsviz(varnames=['head'])
-    # print g.source
-    # g.render(view=True)
+    g = callsviz(varnames=None)
+    print g.source
+    g.view()
 
 def f(x,y):
     t = "mom"
@@ -56,13 +56,15 @@ h = Node('blort', Node(head))
 
 x = [User('name'+str(i)) for i in range(3)]
 
-# f(989,head)
+f(989,head)
 
-print root
-g = callviz()#varnames=['head'])
-# print g.source
+# print(root)
+# g = callsviz()
+
+# treeviz(root)
+# print(g.source)
 # g.view(cleanup=True)
-g.render('lolviz', view=True, cleanup=True)
+# g.render('lolviz', view=True)
 
 #g = callviz()
 # print "hashcode =", hashcode(key)
@@ -76,3 +78,26 @@ g.render('lolviz', view=True, cleanup=True)
 # name = 'parrt'
 # s = [3, 9, 10]
 # t = {'a': 999, 'b': 1}
+
+
+# JUNK DRAWER
+#
+# from subprocess import check_call
+# check_call(['dot','-Tpng','InputFile.dot','-o','OutputFile.png'])
+#
+# s2 = """
+#     digraph G {
+#         nodesep=.2;
+#         ranksep=.2;
+#         node [shape=box, penwidth="0.5",width=.1,height=.1];
+#
+# """
+# s2 += obj_nodes(g)
+# s2 += obj_edges(g)
+# s2 += '}'
+# tr = graphviz.Source(s2)
+# tr.save('lolviz_subgraph.dot')
+# check_call(['dot', '-Tpng', 'lolviz_subgraph.dot', '-Gdpi=300', '-o', 'lolviz_subgraph.png'])
+# check_call(['dot', '-Tpdf', 'lolviz_subgraph.dot', '-o', 'lolviz_subgraph.pdf'])
+# check_call(['dot', '-Tgif', 'lolviz_subgraph.dot', '-o', 'lolviz_subgraph.gif'])
+# s += 'nodedfadsfasdfasdf [image="lolviz_subgraph.pdf"]'

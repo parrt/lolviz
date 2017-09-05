@@ -13,6 +13,8 @@ import inspect
 import types
 import sys
 from collections import defaultdict
+from subprocess import check_call
+
 
 YELLOW = "#fefecd" # "#fbfbd0" # "#FBFEB0"
 BLUE = "#D9E6F5"
@@ -118,45 +120,46 @@ def treeviz(root,
         left = lambda p : getattr(p,leftfield)
     if right is None:
         right = lambda p : getattr(p,rightfield)
-    s = """
-    digraph G {
-        nodesep=.2;
-        ranksep=.2;
-        node [shape=box, penwidth="0.5",width=.1,height=.1];
-
-"""
 
     nodes = []
-    edges = []
-    def walk(t,i):
+    # edges = []
+    def treewalk(t):
         "Walk recursively to make a list of node definitions. Return the next node number"
-        if t is None: return i
+        if t is None: return
         html = treenode_html(value(t), leftfield, rightfield)
-        nodes.append('    node%d [space="0.0", margin="0.01", fontcolor="#444443", fontname="Helvetica", label=<%s>];\n' % (i, html))
-        ti = i
-        i += 1
-        lefti = i
-        i = walk(left(t), i)
-        righti = i
-        i = walk(right(t), i)
-        if left(t):
-            edges.append( (ti,'left',lefti) )
-        if right(t):
-            edges.append( (ti,'right',righti) )
-        return i
+        nodes.append('    node%d [space="0.0", margin="0.01", fontcolor="#444443", fontname="Helvetica", label=<%s>];\n' % (id(t), html))
+        treewalk(left(t))
+        treewalk(right(t))
+        # if left(t):
+        #     edges.append( (id(t),'left',id(left(t))) )
+        # if right(t):
+        #     edges.append( (id(t),'right',id(right(t))) )
 
-    walk(root,0)
-    s += '\n'.join(nodes)
+    treewalk(root)
+    e = edges(nodes)
+
+    return tree_graph(nodes,e)
+
+
+def tree_graph(nodes,edges):
+    s = """
+        digraph G {
+            nodesep=.2;
+            ranksep=.2;
+            node [shape=box, penwidth="0.5",width=.1,height=.1];
+
+    """
+
+    s += nodes
 
     # draw edges
     for e in edges:
-        if e[2]=='left':
-            s += '    node%d:%s:n -> node%d [dir=both, tailclip=false, arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % e
-        else:
-            s += '    node%d:%s:n -> node%d [dir=both, tailclip=false, arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % e
+        p = e[0]
+        label = e[1]
+        q = e[2]
+        s += '    node%s:%s:n -> node%s [dir=both, tailclip=false, arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (id(p), label, id(q))
 
     s += "}\n"
-    # print s
     return graphviz.Source(s)
 
 
@@ -206,8 +209,8 @@ def callviz(frame=None, varnames=None):
 def callsviz(callstack=None, varnames=None):
     s = """
     digraph G {
-        nodesep=.10;
-        ranksep=.20;
+        nodesep=.1;
+        ranksep=.1;
         rankdir=LR;
         node [penwidth="0.5", shape=box, width=.1, height=.1];
 
@@ -246,23 +249,25 @@ def callsviz(callstack=None, varnames=None):
     max_edges_for_type,subgraphs = connected_subgraphs(caller, varnames)
     c = 1
     for g in subgraphs:
-        if max_edges_for_type[g[0].__class__]==1:
-            s += 'subgraph cluster%d {penwidth=.7 pencolor="%s"\n' % (c,GREEN)
+        firstelement = g[0]
+        if max_edges_for_type[firstelement.__class__]==1: # linked list
+            s += 'subgraph cluster%d {style=invis penwidth=.7 pencolor="%s"\n' % (c,GREEN)
             s += obj_nodes(g)
             s += "\n}\n"
             c += 1
+        elif max_edges_for_type[firstelement.__class__]==2: # binary tree
+            s += obj_nodes(g) # nothing special for now
 
     # now dump disconnected nodes
     for p in reachable:
         found = False
         for g in subgraphs:
-            if id(p) in g:
+            if p in g:
                 found = True
                 break
         if not found:
             s += obj_node(p, varnames)
 
-    # s += obj_nodes(reachable)
     s += obj_edges(reachable)
     s += obj_edges(callstack, varnames)
     s += "}\n"
@@ -294,7 +299,6 @@ digraph G {
 
 def obj_nodes(nodes):
     s = ""
-    # define nodes
     for p in nodes:
         s += obj_node(p)
     return s
@@ -654,7 +658,7 @@ def dict_html(d):
 def treenode_html(nodevalue, leftfield, rightfield):
     return \
         """
-    <table BORDER="0" CELLBORDER="1" CELLSPACING="0" fixedsize="TRUE">
+    <table BORDER="0" CELLBORDER="1" CELLSPACING="0">
       <tr>
         <td colspan="2" cellspacing="0" bgcolor="#FBFEB0" border="1" sides="b" valign="top"><font color="#444443" point-size="11">%s</font></td>
       </tr>
@@ -851,7 +855,11 @@ def connected_subgraphs(reachable, varnames=None):
                     subgraphs.append({id(p),id(q)})
                     subgraphobjs.append([p, q])
 
-    return max_edges_for_type,subgraphobjs
+    uniq = []
+    for g in subgraphobjs:
+        uniq.append( list(set(g)) )
+
+    return max_edges_for_type,uniq
 
 
 def max_edges_in_connected_subgraphs(reachable, varnames=None):
@@ -883,9 +891,3 @@ def max_edges_in_connected_subgraphs(reachable, varnames=None):
 
     print(max_edges_for_type)
     return max_edges_for_type
-
-
-"""JUNK
-from subprocess import check_call
-check_call(['dot','-Tpng','InputFile.dot','-o','OutputFile.png'])
-"""
