@@ -513,10 +513,10 @@ def gr_vlist_html(elems, bgcolor=GREEN):
 
     rows = []
     for i,el in enumerate(elems):
-        sides = 'BORDER="1" sides="b" cellpadding="1"'
         if i==len(elems)-1:
-            sides='BORDER="0" cellpadding="2"'
-        value = '<td port="%d" cellspacing="0" %s bgcolor="%s" align="left"><font color="#444443" point-size="9"> %s </font></td>\n' % (i, sides, bgcolor, str(i))
+            value = '<td port="%d" BORDER="0" cellpadding="3" cellspacing="0" bgcolor="%s" align="left"><font color="#444443" point-size="9">%s</font></td>\n' % (i, bgcolor, str(i))
+        else:
+            value = '<td port="%d" BORDER="1" cellpadding="2" cellspacing="0" sides="b" bgcolor="%s" align="left"><font color="#444443" point-size="9">%s</font></td>\n' % (i, bgcolor, str(i))
         row = '<tr>' + value + '</tr>\n'
         rows.append(row)
 
