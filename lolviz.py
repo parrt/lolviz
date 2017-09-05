@@ -157,8 +157,50 @@ def tree_graph(nodes,edges):
     s += "}\n"
     return graphviz.Source(s)
 
-
 def lolviz(table, showassoc=True):
+    """
+    Given a list of lists such as:
+
+      [ [('a','3')], [], [('b',230), ('c',21)] ]
+
+    return the dot/graphviz to display as a two-dimensional
+    structure.
+
+    If showassoc, display 2-tuples (x,y) as x->y.
+    """
+    if not islol(table):
+        return listviz(table, showassoc)
+
+    s = """
+    digraph G {
+        nodesep=.05;
+        ranksep=.4;
+        rankdir=LR;
+        node [penwidth="0.5", shape=box, width=.1, height=.1];
+
+    """
+    sublists = table
+
+    nodename = "node%d" % id(table)
+    s += gr_vlist_node(nodename, table) # add vlist
+
+    for sublist in sublists:
+        nodename = "node%d" % id(sublist)
+        if len(sublist)==0:
+            s += 'node%d [margin="0.03", shape=none label=<<font face="Times-Italic" color="#444443" point-size="9">empty list</font>>];\n' % id(sublist)
+        else:
+            s += gr_list_node(nodename, sublist)
+
+    i = 0
+    for sublist in sublists:
+        s += 'node%d:%s -> node%d [arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (id(table), str(i), id(sublist))
+        i += 1
+
+    s += "}\n"
+    return graphviz.Source(s)
+
+
+def lolviz_old(table, showassoc=True):
     """
     Given a list of lists such as:
 
@@ -179,7 +221,8 @@ def lolviz(table, showassoc=True):
         node [penwidth="0.5", width=.1,height=.1];
     """
 
-    nodes,edges = lol_nodes(table, showassoc)
+    reachable = closure(table)
+    nodes,edges = obj_nodes(reachable)
     s += ''.join(nodes.values())
     s += ''.join(edges)
 
@@ -405,7 +448,7 @@ def lol_nodes(table, showassoc):
     labels = []
     for i in range(len(table)):
         labels.append("<f%d> %d" % (i, i))
-    s = 'node%d [color="#444443", fontsize="9", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="#D9E6F5", label = "%s"];\n' % (id(table), '|'.join(labels))
+    s = 'node%d [margin=0.01, shape=record, color="#444443", fontsize="9", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="%s", label = "%s"];\n' % (id(table), GREEN, '|'.join(labels))
     nodes['node%d'%id(table)] = s
     # define inner lists
     for i in range(len(table)):
@@ -413,7 +456,7 @@ def lol_nodes(table, showassoc):
         if bucket == None:
             continue
         if (type(bucket) == list or type(bucket) == tuple) and len(bucket) == 0:
-            s = 'node%d [margin="0.03", shape=none label=<<font color="#444443" point-size="9">empty list</font>>];\n' % id(bucket)
+            s = 'node%d [margin="0.03", shape=none label=<<font face="Times-Italic" color="#444443" point-size="9">empty list</font>>];\n' % id(bucket)
         elif type(bucket) == list or type(bucket) == tuple and len(bucket) > 0:
             s = list_node(bucket, showassoc)
         else:
@@ -426,7 +469,7 @@ def lol_nodes(table, showassoc):
         bucket = table[i]
         if bucket == None:
             continue
-        s = 'node%d:f%d -> node%d [penwidth="0.5", color="#444443", arrowsize=.4]\n' % (id(table), i, id(bucket))
+        s = 'node%d:f%d -> node%d:w [penwidth="0.5", color="#444443", arrowsize=.4]\n' % (id(table), i, id(bucket))
         edges.append(s)
     return nodes, edges
 
@@ -572,9 +615,9 @@ def gr_vlist_html(elems, bgcolor=GREEN):
 
     rows = []
     for i,el in enumerate(elems):
-        sides = 'BORDER="1" sides="b" cellpadding="0"'
+        sides = 'BORDER="1" sides="b" cellpadding="1"'
         if i==len(elems)-1:
-            sides='BORDER="0" cellpadding="1"'
+            sides='BORDER="0" cellpadding="2"'
         value = '<td port="%d" cellspacing="0" %s bgcolor="%s" align="left"><font color="#444443" point-size="9">%s</font></td>\n' % (i, sides, bgcolor, str(i))
         row = '<tr>' + value + '</tr>\n'
         rows.append(row)
