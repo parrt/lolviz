@@ -122,7 +122,6 @@ def treeviz(root,
         right = lambda p : getattr(p,rightfield)
 
     nodes = []
-    # edges = []
     def treewalk(t):
         "Walk recursively to make a list of node definitions. Return the next node number"
         if t is None: return
@@ -130,10 +129,6 @@ def treeviz(root,
         nodes.append('    node%d [space="0.0", margin="0.01", fontcolor="#444443", fontname="Helvetica", label=<%s>];\n' % (id(t), html))
         treewalk(left(t))
         treewalk(right(t))
-        # if left(t):
-        #     edges.append( (id(t),'left',id(left(t))) )
-        # if right(t):
-        #     edges.append( (id(t),'right',id(right(t))) )
 
     treewalk(root)
     e = edges(nodes)
@@ -337,7 +332,7 @@ def obj_node(p, varnames=None):
         s += gr_dict_node(nodename, caller_scopename, items, highlight=argnames, bgcolor=BLUE,
                           separator=None, reprkey=False)
     elif type(p) == dict:
-        print "DRAW DICT", p, '@ node' + nodename
+        # print "DRAW DICT", p, '@ node' + nodename
         items = []
         i = 0
         for k, v in p.items():
@@ -350,7 +345,7 @@ def obj_node(p, varnames=None):
         s += '// DICT\n'
         s += gr_dict_node(nodename, None, items)
     elif hasattr(p, "__iter__") and isatomlist(p):
-        print "DRAW LIST", p, '@ node' + nodename
+        # print "DRAW LIST", p, '@ node' + nodename
         elems = []
         for el in p:
             if isatom(el):
@@ -360,7 +355,7 @@ def obj_node(p, varnames=None):
         s += '// LIST or ITERATABLE\n'
         s += gr_list_node(nodename, elems)
     elif hasattr(p, "__iter__"):
-        print "DRAW VERTICAL LIST", p, '@ node' + nodename
+        # print "DRAW VERTICAL LIST", p, '@ node' + nodename
         elems = []
         for el in p:
             if isatom(el):
@@ -370,7 +365,7 @@ def obj_node(p, varnames=None):
         s += '// VERTICAL LIST or ITERATABLE\n'
         s += gr_vlist_node(nodename, elems)
     elif hasattr(p, "__dict__"):  # generic object
-        print "DRAW OBJ", p, '@ node' + nodename
+        # print "DRAW OBJ", p, '@ node' + nodename
         items = []
         for k, v in p.__dict__.items():
             if isatom(v):
@@ -381,7 +376,7 @@ def obj_node(p, varnames=None):
         s += gr_dict_node(nodename, p.__class__.__name__, items, separator=None,
                           reprkey=False)
     else:
-        print "CANNOT HANDLE: " + str(p)
+        print("CANNOT HANDLE: " + str(p))
     return s
 
 
