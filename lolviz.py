@@ -22,6 +22,7 @@ BLUE = "#D9E6F5"
 GREEN = "#cfe2d4"
 
 MAX_VALUE_LEN = 30
+MAX_HORIZ_ARRAY_CHAR_LEN = 180 # how many chars before it's too wide and we go vertical?
 
 def strviz(astring):
     s = """
@@ -47,9 +48,6 @@ def listviz(elems, showassoc=True):
         nodesep=.05;
         node [penwidth="0.5", width=.1,height=.1];
     """
-    if type(elems)==dict:
-        return dictviz(elems)
-
     s += list_node(elems, showassoc)
 
     s += "}\n"
@@ -439,15 +437,20 @@ def gr_listtable_html(values, bgcolor=YELLOW):
     last_index_html = '<td cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="b" valign="top"><font color="#444443" point-size="9">%d</font></td>\n'
     last_value_html = '<td port="%d" bgcolor="%s" border="0" align="center"><font point-size="11">%s</font></td>\n'
 
-    abbrev_values = [abbrev_and_escape(repr(v)) for v in values]
+    abbrev_values = []
+    for v in values:
+        if v is not None:
+            abbrev_values.append( abbrev_and_escape(repr(v)) )
+        else:
+            abbrev_values.append( '  ' )
 
     lastindex = len(values) - 1
     toprow = [index_html % (bgcolor,i) for i in range(lastindex)]
-    bottomrow = [value_html % (i,bgcolor,abbrev_values if abbrev_values[i] is not None else ' ') for i in range(lastindex)]
+    bottomrow = [value_html % (i,bgcolor,abbrev_values[i]) for i in range(lastindex)]
 
     if len(values)>=1:
         toprow.append(last_index_html % (bgcolor,lastindex))
-        bottomrow.append(last_value_html % (lastindex, bgcolor,abbrev_values[lastindex] if abbrev_values[lastindex] is not None else ' '))
+        bottomrow.append(last_value_html % (lastindex, bgcolor,abbrev_values[lastindex]))
 
     tail = "</table>\n"
     return header + '<tr>\n'+''.join(toprow)+'</tr>\n' + '<tr>\n'+''.join(bottomrow)+'</tr>' + tail
