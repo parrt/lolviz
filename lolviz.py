@@ -8,15 +8,20 @@ useful to freeze dry / snapshot various states of execution.
 Currently I have two cut-and-paste or awkwardly embed pythontutor
 into my notes.
 """
+from __future__ import print_function
 import graphviz
 import inspect
 import types
 from collections import defaultdict
+import sys
+import traceback
 
 
 YELLOW = "#fefecd" # "#fbfbd0" # "#FBFEB0"
 BLUE = "#D9E6F5"
 GREEN = "#cfe2d4"
+
+MAX_VALUE_LEN = 30
 
 def strviz(astring):
     s = """
@@ -28,21 +33,6 @@ def strviz(astring):
 
     s += string_node(astring)
 
-    s += '}\n'
-    return graphviz.Source(s)
-
-
-def dictviz(d):
-    """
-    Display a dictionary with the key/value pairs in a vertical list.
-    """
-    s = """
-    digraph G {
-        nodesep=.05;
-        rankdir=LR;
-        node [penwidth="0.5",shape=box,width=.1,height=.1];
-    """
-    s += dict_node(d)
     s += '}\n'
     return graphviz.Source(s)
 
@@ -356,7 +346,8 @@ def obj_node(p, varnames=None):
         s += gr_dict_node(nodename, p.__class__.__name__, items, separator=None,
                           reprkey=False)
     else:
-        print("CANNOT HANDLE: " + str(p))
+        s += 'node%d [margin="0.03", shape=none label=<<font face="Times-Italic" color="#444443" point-size="9">%s</font>>];\n' % (id(p),abbrev_and_escape("CANNOT HANDLE: type==%s '%s'" % (type(p),repr(p))))
+
     return s
 
 
@@ -448,13 +439,15 @@ def gr_listtable_html(values, bgcolor=YELLOW):
     last_index_html = '<td cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="b" valign="top"><font color="#444443" point-size="9">%d</font></td>\n'
     last_value_html = '<td port="%d" bgcolor="%s" border="0" align="center"><font point-size="11">%s</font></td>\n'
 
+    abbrev_values = [abbrev_and_escape(repr(v)) for v in values]
+
     lastindex = len(values) - 1
     toprow = [index_html % (bgcolor,i) for i in range(lastindex)]
-    bottomrow = [value_html % (i,bgcolor,repr(values[i]) if values[i] is not None else ' ') for i in range(lastindex)]
+    bottomrow = [value_html % (i,bgcolor,abbrev_values if abbrev_values[i] is not None else ' ') for i in range(lastindex)]
 
     if len(values)>=1:
         toprow.append(last_index_html % (bgcolor,lastindex))
-        bottomrow.append(last_value_html % (lastindex, bgcolor,repr(values[lastindex]) if values[lastindex] is not None else ' '))
+        bottomrow.append(last_value_html % (lastindex, bgcolor,abbrev_values[lastindex] if abbrev_values[lastindex] is not None else ' '))
 
     tail = "</table>\n"
     return header + '<tr>\n'+''.join(toprow)+'</tr>\n' + '<tr>\n'+''.join(bottomrow)+'</tr>' + tail
@@ -489,6 +482,7 @@ def gr_dict_html(title, items, highlight=None, bgcolor=YELLOW, separator="&rarr;
 
             if value is not None:
                 v = repr(value)
+                v = abbrev_and_escape(v)
             else:
                 v = "   "
             value = '<td port="%s" cellspacing="0" cellpadding="1" bgcolor="%s" border="0" align="left"><font color="#444443" point-size="11"> %s</font></td>\n' % (label, bgcolor, v)
@@ -551,30 +545,6 @@ def scopetable_html(scopename, names, values, color="#D9E6F5"):
         </table>
         """
     return header + blankrow.join(rows) + tail
-
-
-def dict_node(d):
-    html = dict_html(d)
-    return '    node%d [color="#444443", fontsize="9", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="#FBFEB0", label=<%s>];\n' % (id(d),html)
-
-
-def dict_html(d):
-    header = \
-        """
-        <table BORDER="0" CELLBORDER="1" CELLSPACING="0">
-        """
-    rows = []
-    for key,value in d.items():
-        pair = "%s&rarr;%s" % (repr(key),elviz(value,False))
-        html = '<td port="%s" cellspacing="0" cellpadding="0" bgcolor="#FBFEB0" border="0" valign="top" align="left"><font color="#444443" point-size="11">%s</font></td>\n' % (key,pair)
-        row = '<tr>\n' + html + '</tr>\n'
-        rows.append(row)
-
-    tail = \
-        """
-        </table>
-        """
-    return header + ''.join(rows) + tail
 
 
 def treenode_html(nodevalue, leftfield, rightfield):
@@ -646,7 +616,7 @@ def isatomlist(elems):
     return True
 
 
-def isatom(p): return type(p) == int or type(p) == float or type(p) == str
+def isatom(p): return type(p) == int or type(p) == float or type(p) == str or type(p) == unicode
 
 
 def isplainobj(p): return type(p) != types.FrameType and \
@@ -677,6 +647,7 @@ def closure_(p, varnames, visited):
         frame = p
         info = inspect.getframeinfo(frame)
         for k, v in frame.f_locals.items():
+            # error('INCLUDE frame var %s' % k)
             if varnames is not None and k not in varnames: continue
             if not ignoresym((k, v)):
                 cl = closure_(v, varnames, visited)
@@ -809,3 +780,18 @@ def max_edges_in_connected_subgraphs(reachable, varnames=None):
 
     # print(max_edges_for_type)
     return max_edges_for_type
+
+
+def abbrev_and_escape(s):
+    if s is None:
+        return s
+    if len(s) > MAX_VALUE_LEN:
+        s = s[:MAX_VALUE_LEN] + "..."
+    s = s.replace('&', '&amp;')
+    s = s.replace('<', '&lt;')
+    s = s.replace('>', '&gt;')
+    return s
+
+
+def error(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)

@@ -47,7 +47,7 @@ bucket.append( (key,value) ) # add association to the bucket
 bucket.append( (key+'x',value+100) ) # add association to the bucket
 table[4].append( [9,8,7,6] )
 
-objviz(table).view()
+# lolviz(table).view()
 
 # g2 = lolviz(table)
 # g2 = strviz('parrt')
@@ -61,7 +61,7 @@ root = Tree('parrt',
                       Tree('april'))),
             Tree('xue',None,Tree('mike')))
 
-# treeviz(root).view()
+treeviz(root).view()
 
 table = [[3,4], ["aaa",5.3]]
 d = {'super cool':table, 'bar':99}
@@ -80,7 +80,7 @@ h = Node('blort', Node(head))
 
 x = [User('name'+str(i)) for i in range(3)]
 
-#f(989,head)
+f(989,head)
 
 # head2 = ('parrt',('mary',None))
 # objviz(head2).view()
