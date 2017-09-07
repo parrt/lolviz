@@ -21,8 +21,8 @@ YELLOW = "#fefecd" # "#fbfbd0" # "#FBFEB0"
 BLUE = "#D9E6F5"
 GREEN = "#cfe2d4"
 
-MAX_VALUE_LEN = 30
-MAX_HORIZ_ARRAY_CHAR_LEN = 180 # how many chars before it's too wide and we go vertical?
+MAX_VALUE_LEN = 20
+MAX_HORIZ_ARRAY_CHAR_LEN = 70 # how many chars before it's too wide and we go vertical?
 
 def strviz(astring):
     s = """
@@ -130,7 +130,7 @@ def lolviz(table, showassoc=True):
     sublists = table
 
     nodename = "node%d" % id(table)
-    s += gr_vlist_node(nodename, table) # add vlist
+    s += gr_vlol_node(nodename, table) # add vlist
 
     for sublist in sublists:
         nodename = "node%d" % id(sublist)
@@ -331,7 +331,7 @@ def obj_node(p, varnames=None):
             else:
                 elems.append(None)
         s += '// VERTICAL LIST or ITERATABLE\n'
-        s += gr_vlist_node(nodename, elems)
+        s += gr_vlol_node(nodename, elems)
     elif hasattr(p, "__dict__"): # generic object
         # print "DRAW OBJ", p, '@ node' + nodename
         items = []
@@ -422,7 +422,11 @@ def listtable_html(values, showassoc):
 
 def gr_list_node(nodename, elems, bgcolor=YELLOW):
     if len(elems)>0:
-        html = gr_listtable_html(elems, bgcolor)
+        abbrev_values = abbrev_and_escape_values(elems) # compute just to see eventual size
+        if len(''.join(abbrev_values))>MAX_HORIZ_ARRAY_CHAR_LEN:
+            html = gr_vlist_html(elems, bgcolor)
+        else:
+            html = gr_listtable_html(elems, bgcolor)
     else:
         html = " "
     return '%s [shape="box", space="0.0", margin="0.01", fontcolor="#444443", fontname="Helvetica", label=<%s>];\n' % (nodename,html)
@@ -437,20 +441,24 @@ def gr_listtable_html(values, bgcolor=YELLOW):
     last_index_html = '<td cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="b" valign="top"><font color="#444443" point-size="9">%d</font></td>\n'
     last_value_html = '<td port="%d" bgcolor="%s" border="0" align="center"><font point-size="11">%s</font></td>\n'
 
-    abbrev_values = []
-    for v in values:
-        if v is not None:
-            abbrev_values.append( abbrev_and_escape(repr(v)) )
+    newvalues = []
+    for value in values:
+        if value is not None:
+            if len(str(value)) > MAX_VALUE_LEN:
+                value = abbrev_and_escape(str(value))
+            v = repr(value)
         else:
-            abbrev_values.append( '  ' )
+            v = "  "
+        newvalues.append(v)
+    values = newvalues
 
     lastindex = len(values) - 1
     toprow = [index_html % (bgcolor,i) for i in range(lastindex)]
-    bottomrow = [value_html % (i,bgcolor,abbrev_values[i]) for i in range(lastindex)]
+    bottomrow = [value_html % (i,bgcolor,values[i]) for i in range(lastindex)]
 
     if len(values)>=1:
         toprow.append(last_index_html % (bgcolor,lastindex))
-        bottomrow.append(last_value_html % (lastindex, bgcolor,abbrev_values[lastindex]))
+        bottomrow.append(last_value_html % (lastindex, bgcolor,values[lastindex]))
 
     tail = "</table>\n"
     return header + '<tr>\n'+''.join(toprow)+'</tr>\n' + '<tr>\n'+''.join(bottomrow)+'</tr>' + tail
@@ -464,8 +472,7 @@ def gr_dict_node(nodename, title, items, highlight=None, bgcolor=YELLOW, separat
 def gr_dict_html(title, items, highlight=None, bgcolor=YELLOW, separator="&rarr;", reprkey=True):
     header = '<table BORDER="0" CELLPADDING="0" CELLBORDER="1" CELLSPACING="0">\n'
 
-    blankrow = '<tr><td cellpadding="1" border="0"></td></tr>'
-
+    blankrow = '<tr><td colspan="3" cellpadding="1" border="0" bgcolor="%s"></td></tr>' % (bgcolor)
     rows = []
     if title is not None:
         title = '<tr><td cellspacing="0" colspan="3" cellpadding="0" bgcolor="%s" border="1" sides="b" align="center"><font color="#444443" FACE="Times-Italic" point-size="11">%s</font></td></tr>\n' % (bgcolor, title)
@@ -484,8 +491,8 @@ def gr_dict_html(title, items, highlight=None, bgcolor=YELLOW, separator="&rarr;
                 sep = '<td cellspacing="0" cellpadding="0" border="0"></td>'
 
             if value is not None:
-                v = repr(value)
-                v = abbrev_and_escape(v)
+                v = abbrev_and_escape(str(value))
+                v = repr(v)
             else:
                 v = "   "
             value = '<td port="%s" cellspacing="0" cellpadding="1" bgcolor="%s" border="0" align="left"><font color="#444443" point-size="11"> %s</font></td>\n' % (label, bgcolor, v)
@@ -498,12 +505,12 @@ def gr_dict_html(title, items, highlight=None, bgcolor=YELLOW, separator="&rarr;
     return header + blankrow.join(rows) + tail
 
 
-def gr_vlist_node(nodename, elems, bgcolor=GREEN):
-    html = gr_vlist_html(elems, bgcolor)
+def gr_vlol_node(nodename, elems, bgcolor=GREEN):
+    html = gr_vlol_html(elems, bgcolor)
     return '%s [color="#444443", margin="0.02", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="%s", label=<%s>];\n' % (nodename,bgcolor,html)
 
 
-def gr_vlist_html(elems, bgcolor=GREEN):
+def gr_vlol_html(elems, bgcolor=GREEN):
     if len(elems)==0:
         return " "
     header = '<table BORDER="0" CELLPADDING="0" CELLBORDER="0" CELLSPACING="0">\n'
@@ -521,33 +528,9 @@ def gr_vlist_html(elems, bgcolor=GREEN):
     return header + ''.join(rows) + tail
 
 
-def scopetable_html(scopename, names, values, color="#D9E6F5"):
-    header = \
-        """
-        <table BORDER="0" CELLBORDER="1" CELLSPACING="0">
-        """
-
-    blankrow = '<tr><td border="0"></td></tr>'
-
-    scope = '<tr><td cellspacing="0" colspan="2" cellpadding="0" bgcolor="%s" border="0" align="center"><font color="#444443" FACE="Times-Italic" point-size="11"><i>%s</i></font></td></tr>\n' % (scopename,color)
-
-    rows = []
-    rows.append(scope)
-    for i in range(len(names)):
-        name = '<td cellspacing="0" cellpadding="0" bgcolor="#D9E6F5" border="1" sides="r" align="right"><font color="#444443" point-size="11">%s </font></td>\n' % names[i]
-        if values[i] is not None:
-            v = values[i]
-        else:
-            v = ""
-        value = '<td port="%s" cellspacing="0" cellpadding="1" bgcolor="#D9E6F5" border="0" align="left"><font color="#444443" point-size="11"> %s</font></td>\n' % (names[i],v)
-        row = '<tr>' + name + value + '</tr>\n'
-        rows.append(row)
-
-    tail = \
-        """
-        </table>
-        """
-    return header + blankrow.join(rows) + tail
+def gr_vlist_html(elems, bgcolor=YELLOW):
+    items = [(i,i,value) for i,value in enumerate(elems)]
+    return gr_dict_html(title=None, items=items, separator=None, bgcolor=bgcolor)
 
 
 def treenode_html(nodevalue, leftfield, rightfield):
@@ -783,6 +766,16 @@ def max_edges_in_connected_subgraphs(reachable, varnames=None):
 
     # print(max_edges_for_type)
     return max_edges_for_type
+
+
+def abbrev_and_escape_values(elems):
+    abbrev_values = []
+    for v in elems:
+        if v is not None:
+            abbrev_values.append(abbrev_and_escape(str(v)))
+        else:
+            abbrev_values.append('  ')
+    return abbrev_values
 
 
 def abbrev_and_escape(s):

@@ -61,7 +61,10 @@ root = Tree('parrt',
                       Tree('april'))),
             Tree('xue',None,Tree('mike')))
 
-treeviz(root).view()
+# treeviz(root).view()
+
+longlist = ['kkkkkkkkkkkkkkkkkkkkkkkkk','aaaaaaaaaaaaaaaaaaa', 'jjjjjjjjjjjjjjjjjjjjjjjjj', 'abcabc', 'kakakakakakakakakakakakakak']
+# objviz(longlist).view()
 
 table = [[3,4], ["aaa",5.3]]
 d = {'super cool':table, 'bar':99}
@@ -80,10 +83,10 @@ h = Node('blort', Node(head))
 
 x = [User('name'+str(i)) for i in range(3)]
 
-f(989,head)
+#f(989,head)
 
-# head2 = ('parrt',('mary',None))
-# objviz(head2).view()
+head2 = ('parrt',('mary',None))
+objviz(head2).view()
 
 # print(root)
 # g = callsviz()
