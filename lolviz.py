@@ -403,11 +403,11 @@ def list_node(elems, showassoc):
 def listtable_html(values, showassoc):
     header = '<table BORDER="0" CELLBORDER="0" CELLSPACING="0">\n'
 
-    index_html = '<td cellspacing="0" bgcolor="#FBFEB0" border="1" sides="br" valign="top"><font color="#444443" point-size="9">%d</font></td>\n'
-    value_html = '<td port="%d" bgcolor="#FBFEB0" border="1" sides="r" align="center"><font point-size="11">%s</font></td>\n'
+    index_html = '<td cellspacing="0" bgcolor="'+YELLOW+'" border="1" sides="br" valign="top"><font color="#444443" point-size="9">%d</font></td>\n'
+    value_html = '<td port="%d" bgcolor="'+YELLOW+'" border="1" sides="r" align="center"><font point-size="11">%s</font></td>\n'
     # don't want right border to show on last.
-    last_index_html = '<td cellspacing="0" bgcolor="#FBFEB0" border="1" sides="b" valign="top"><font color="#444443" point-size="9">%d</font></td>\n'
-    last_value_html = '<td port="%d" bgcolor="#FBFEB0" border="0" align="center"><font point-size="11">%s</font></td>\n'
+    last_index_html = '<td cellspacing="0" bgcolor="'+YELLOW+'" border="1" sides="b" valign="top"><font color="#444443" point-size="9">%d</font></td>\n'
+    last_value_html = '<td port="%d" bgcolor="'+YELLOW+'" border="0" align="center"><font point-size="11">%s</font></td>\n'
 
     lastindex = len(values) - 1
     toprow = [index_html % i for i in range(lastindex)]
@@ -554,7 +554,7 @@ def treenode_html(nodevalue, leftfield, rightfield):
 
 def string_node(s):
     html = string_html(s)
-    return '    node%d [width=0,height=0, color="#444443", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="#FBFEB0", label=<%s>];\n' % (id(s),html)
+    return '    node%d [width=0,height=0, color="#444443", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="%s", label=<%s>];\n' % (id(s),YELLOW,html)
 
 
 def string_html(s):
