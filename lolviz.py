@@ -666,7 +666,7 @@ def edges(reachable, varnames=None):
 
 
 def node_edges(p, varnames=None):
-    """Return list of (p, port-in-p, q) for all ptrs in p"""
+    """Return list of (p, fieldname-in-p, q) for all ptrs in p"""
     edges = []
     if type(p) == types.FrameType:
         frame = p
@@ -700,7 +700,7 @@ def connected_subgraphs(reachable, varnames=None):
 
     reachable = closure(reachable, varnames)
     subgraphs = [] # list of sets of obj id()s
-    subgraphobjs = [] # list of sets of obj ptrs (parallel list to track objs since can't hash on obj as key)
+    subgraphobjs = [] # list of sets of obj ptrs (parallel list to track objs since can't hash on some objs like lists/sets as keys)
     type_fieldname_map = {}
     for p in reachable:
         if not isplainobj(p):
@@ -711,12 +711,13 @@ def connected_subgraphs(reachable, varnames=None):
             q = e[2]
             if type(p) == type(q):
                 # ensure that singly-linked nodes use same field
-                if max_edges_for_type[p.__class__]==1 and p.__class__.__name__ in type_fieldname_map:
-                    prev_fieldname = type_fieldname_map[p.__class__.__name__]
+                cname = p.__class__.__name__
+                if max_edges_for_type[p.__class__]==1 and cname in type_fieldname_map:
+                    prev_fieldname = type_fieldname_map[cname]
                     if fieldname!=prev_fieldname:
                         continue
                 else:
-                    type_fieldname_map[p.__class__.__name__] = fieldname
+                    type_fieldname_map[cname] = fieldname
                 # search for an existing subgraph
                 found = False
                 for i in range(len(subgraphs)):
@@ -739,9 +740,9 @@ def connected_subgraphs(reachable, varnames=None):
 
 def max_edges_in_connected_subgraphs(reachable, varnames=None):
     """
-    Return mapping from node class to max num edges connecting
+    Return mapping from node class obj to max num edges connecting
     nodes of that same type. Ignores all but isplainobj() nodes.
-    Ignores any node type w/o edges connecting to same type.
+    Ignores any node type w/o at least one edge connecting to same type.
 
     The keys indicate the set of types (class def objects)
     that are involved in connected subgraphs.
@@ -751,21 +752,27 @@ def max_edges_in_connected_subgraphs(reachable, varnames=None):
     """
     max_edges_for_type = defaultdict(int)
     reachable = closure(reachable, varnames)
+    reachable = [p for p in reachable if isplainobj(p)]
     for p in reachable:
-        if not isplainobj(p):
-            continue
-        edges = node_edges(p, varnames)
-        m = 0
-        for e in edges:
-            q = e[2]
-            if type(p) == type(q):
-                m += 1
-                # print("CONNECTED",p,q)
+        homo_edges = edges_to_same_type(p, varnames)
+        m = len(homo_edges)
         if m>0:
             max_edges_for_type[p.__class__] = max(max_edges_for_type[p.__class__], m)
 
-    # print(max_edges_for_type)
+    print(max_edges_for_type)
     return max_edges_for_type
+
+
+def edges_to_same_type(p, varnames):
+    homo_edges = []
+    edges = node_edges(p, varnames)
+    for e in edges:
+        fieldname = e[1]
+        q = e[2]
+        if type(p) == type(q):
+            homo_edges.append(e)
+            print("CONNECTED", p, q, 'via', fieldname)
+    return homo_edges
 
 
 def abbrev_and_escape_values(elems):

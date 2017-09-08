@@ -53,12 +53,14 @@ table[4].append( [9,8,7,6] )
 # print g2.source
 # g2.view()
 
+mike = Tree('mike')
 root = Tree('parrt',
             Tree('mary',
                  Tree('jim',
                       Tree('srinivasan'),
                       Tree('april'))),
-            Tree('xue',None,Tree('mike')))
+            Tree('xue',None,mike))
+mike.backptr = root
 
 # treeviz(root).view()
 
@@ -82,7 +84,8 @@ h = Node('blort', Node(head))
 
 x = [User('name'+str(i)) for i in range(3)]
 
-f(989,head)
+callviz(varnames=['root', 'head']).view()
+#f(989,head)
 
 # head2 = ('parrt',('mary',None))
 # objviz(head2).view()
