@@ -191,7 +191,7 @@ def callsviz(callstack=None, varnames=None):
     for i in range(len(callstack)-1):
         this = callstack[i]
         callee = callstack[i+1]
-        s += 'node%d -> node%d [style=invis]\n' % (id(this), id(callee))
+        s += 'node%d -> node%d [style=invis, weight=100]\n' % (id(this), id(callee))
     s += "}\n\n"
 
     # find all reachable objects
