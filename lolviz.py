@@ -14,15 +14,15 @@ import inspect
 import types
 from collections import defaultdict
 import sys
-import traceback
-
 
 YELLOW = "#fefecd" # "#fbfbd0" # "#FBFEB0"
 BLUE = "#D9E6F5"
 GREEN = "#cfe2d4"
 
-MAX_VALUE_LEN = 20
-MAX_HORIZ_ARRAY_CHAR_LEN = 70 # how many chars before it's too wide and we go vertical?
+class Prefs: pass
+prefs = Prefs()
+prefs.MAX_VALUE_LEN = 20       # how many chars before we abbreviate with ...?
+prefs.MAX_HORIZ_ARRAY_LEN = 70 # how many chars before it's too wide and we go vertical?
 
 def strviz(astring):
     s = """
@@ -423,7 +423,7 @@ def listtable_html(values, showassoc):
 def gr_list_node(nodename, elems, bgcolor=YELLOW):
     if len(elems)>0:
         abbrev_values = abbrev_and_escape_values(elems) # compute just to see eventual size
-        if len(''.join(abbrev_values))>MAX_HORIZ_ARRAY_CHAR_LEN:
+        if len(''.join(abbrev_values))>prefs.MAX_HORIZ_ARRAY_LEN:
             html = gr_vlist_html(elems, bgcolor)
         else:
             html = gr_listtable_html(elems, bgcolor)
@@ -444,7 +444,7 @@ def gr_listtable_html(values, bgcolor=YELLOW):
     newvalues = []
     for value in values:
         if value is not None:
-            if len(str(value)) > MAX_VALUE_LEN:
+            if len(str(value)) > prefs.MAX_VALUE_LEN:
                 value = abbrev_and_escape(str(value))
             v = repr(value)
         else:
@@ -781,8 +781,8 @@ def abbrev_and_escape_values(elems):
 def abbrev_and_escape(s):
     if s is None:
         return s
-    if len(s) > MAX_VALUE_LEN:
-        s = s[:MAX_VALUE_LEN] + "..."
+    if len(s) > prefs.MAX_VALUE_LEN:
+        s = s[:prefs.MAX_VALUE_LEN] + "..."
     s = s.replace('&', '&amp;')
     s = s.replace('<', '&lt;')
     s = s.replace('>', '&gt;')

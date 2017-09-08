@@ -2,7 +2,6 @@ from lolviz import *
 
 def hashcode(o): return ord(o)  # assume keys are single-element strings
 
-
 # test linked list node
 class Node:
     def __str__(self):
