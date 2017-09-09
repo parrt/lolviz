@@ -4,7 +4,7 @@ A simple Python data-structure visualization tool for **L**ists **O**f **L**ists
 
 It seems that I'm always trying to describe how data is laid out in memory to students. There are really great data structure visualization tools but I wanted something I could use directly via Python in Jupyter notebooks. 
 
-The look and idea was inspired by the awesome [Python tutor](http://www.pythontutor.com). The graphviz/dot tool does all of the heavy lifting underneath for layout; my contribution is primarily making graph is display objects in a nice way.
+The look and idea was inspired by the awesome [Python tutor](http://www.pythontutor.com). The graphviz/dot tool does all of the heavy lifting underneath for layout; my contribution is primarily making graphviz display objects in a nice way.
 
 ## Functionality
 
