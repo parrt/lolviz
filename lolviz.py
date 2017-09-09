@@ -100,7 +100,7 @@ def treeviz(root, leftfield='left', rightfield='right'):
             else:
                 fields.append((k, k, None))
         s += '// %s TREE node with fields\n' % p.__class__.__name__
-        s += gr_vtree_node(nodename, fields, separator=None)
+        s += gr_vtree_node(p.__class__.__name__, nodename, fields, separator=None)
 
     # s += obj_nodes(reachable)
     s += obj_edges(reachable)
@@ -585,18 +585,17 @@ def gr_vlist_html(elems, bgcolor=YELLOW):
     return gr_dict_html(title=None, items=items, separator=None, bgcolor=bgcolor)
 
 
-def gr_vtree_node(nodename, items, bgcolor=YELLOW, separator=None, leftfield='left', rightfield='right'):
-    html = gr_vtree_html(items, bgcolor, separator)
+def gr_vtree_node(title, nodename, items, bgcolor=YELLOW, separator=None, leftfield='left', rightfield='right'):
+    html = gr_vtree_html(title, items, bgcolor, separator)
     return '%s [margin="0.03", color="#444443", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="%s", label=<%s>];\n' % (nodename,bgcolor,html)
 
 
-def gr_vtree_html(items, bgcolor=YELLOW, separator=None, leftfield='left', rightfield='right'):
+def gr_vtree_html(title, items, bgcolor=YELLOW, separator=None, leftfield='left', rightfield='right'):
     header = '<table BORDER="0" CELLPADDING="0" CELLBORDER="1" CELLSPACING="0">\n'
 
     rows = []
     blankrow = '<tr><td colspan="3" cellpadding="1" border="0" bgcolor="%s"></td></tr>' % (bgcolor)
 
-    title = "Tree"
     if title is not None:
         title = '<tr><td cellspacing="0" colspan="3" cellpadding="0" bgcolor="%s" border="1" sides="b" align="center"><font color="#444443" FACE="Times-Italic" point-size="11">%s</font></td></tr>\n' % (bgcolor, title)
         rows.append(title)
@@ -631,29 +630,37 @@ def gr_vtree_html(items, bgcolor=YELLOW, separator=None, leftfield='left', right
     <tr><td colspan="3" cellpadding="0" border="1" sides="b" height="3"></td></tr>
     """ + blankrow
 
-
     kidnames = """
     <tr>
-    <td cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="1" sides="r" align="center"><font color="#444443" point-size="6">%s</font></td>
+    <td cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="1" sides="r" align="left"><font color="#444443" point-size="6">%s</font></td>
     %s
-    <td cellspacing="0" cellpadding="1" bgcolor="$bgcolor$" border="0" align="center"><font color="#444443" point-size="6">%s</font></td>
+    <td cellspacing="0" cellpadding="1" bgcolor="$bgcolor$" border="0" align="right"><font color="#444443" point-size="6">%s</font></td>
     </tr>
     """ % (leftfield, sep, rightfield)
 
     kidptrs = """
     <tr>
-    <td port="%s" cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="1" sides="r" align="center" height="12"><font color="#444443" point-size="7"> </font></td>
+    <td port="%s" cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="1" sides="r"><font color="#444443" point-size="1"> </font></td>
     %s
-    <td port="%s" cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="0" align="center" height="12"><font color="#444443" point-size="7"> </font></td>
+    <td port="%s" cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="0"><font color="#444443" point-size="1"> </font></td>
     </tr>
     """ % (leftfield, sep, rightfield)
+
+    bottomsep = """
+    <tr>
+    <td cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="1" sides="r"><font color="#444443" point-size="3"> </font></td>
+    %s
+    <td cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="0"><font color="#444443" point-size="3"> </font></td>
+    </tr>
+    """ % sep
 
     kidsep = kidsep.replace('$bgcolor$', bgcolor)
     kidnames = kidnames.replace('$bgcolor$', bgcolor)
     kidptrs = kidptrs.replace('$bgcolor$', bgcolor)
+    bottomsep = bottomsep.replace('$bgcolor$', bgcolor)
 
     tail = "</table>\n"
-    return header + blankrow.join(rows) + kidsep + kidnames + kidptrs + tail
+    return header + blankrow.join(rows) + kidsep + kidnames + kidptrs + bottomsep + tail
 
 
 def treenode_html_old(nodevalue, leftfield, rightfield):

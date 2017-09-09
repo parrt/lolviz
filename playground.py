@@ -68,7 +68,7 @@ root = Tree('parrt',
 mike.backptr = root
 
 t=treeviz(root)
-# print t.source
+print t.source
 t.view()
 
 longlist = ['kkkkkkkkkkkkkkkkkkkkkkkkk','aaaaaaaaaaaaaaaaaaa', 'jjjjjjjjjjjjjjjjjjjjjjjjj', 'abcabc', 'kakakakakakakakakakakakakak']
