@@ -55,17 +55,14 @@ def listviz(elems, showassoc=True):
 
 
 def treeviz(root, leftfield='left', rightfield='right'):
+    """
+    Display a top-down visualization of a binary tree that has
+    two fields pointing at the left and right subtrees. The
+    type of each node is displayed, all fields, and then
+    left/right pointers at the bottom.
+    """
     if root is None:
         return
-
-    # check that we have left, right fields
-    # if leftfield not in root.__dict__ and rightfield not in root.__dict__:
-    #     # if not, try to guess
-    #     edges = edges_to_same_type(root)
-    #     if len(edges)==2:
-    #         fields = [e[1] for e in edges]
-    # if len(edges)>2:
-    #     return objviz(root)
 
     s = """
     digraph G {
@@ -75,16 +72,6 @@ def treeviz(root, leftfield='left', rightfield='right'):
         node [penwidth="0.5", shape=box, width=.1, height=.1];
 
     """
-
-    # nodes = []
-    # def treewalk(t):
-    #     """Walk recursively to make a list of nodes (DF order)"""
-    #     if t is None: return
-    #     nodes.append(t)
-    #     treewalk(left(t))
-    #     treewalk(right(t))
-    #
-    # treewalk(root)
 
     reachable = closure(root)
 
