@@ -1,25 +1,44 @@
 # lolviz
 
-A simple Python data-structure visualization tool for **L**ists **O**f **L**ists, lists, dictionaries, and linked lists; primarily for use in Jupyter notebooks / presentations. It seems that I'm always trying to describe how data is laid out in memory to students. There are really great data structure visualization tools but I wanted something I could use directly via Python in Jupyter notebooks. The look and idea was inspired by the awesome [Python tutor](http://www.pythontutor.com).
+A simple Python data-structure visualization tool for **L**ists **O**f **L**ists (lol), lists, dictionaries, linked lists, and binary trees. The call stack can also be visualized. This package is primarily for use in teaching and presentations with Jupyter notebooks, but could also be used for debugging data structures.
 
-There are currently five functions of interest that return `graphviz.files.Source` objects:
+It seems that I'm always trying to describe how data is laid out in memory to students. There are really great data structure visualization tools but I wanted something I could use directly via Python in Jupyter notebooks. The look and idea was inspired by the awesome [Python tutor](http://www.pythontutor.com). The graphviz/dot tool does all of the heavy lifting underneath for layout; my contribution is primarily making graph is display objects in a nice way.
 
-* `dictviz()`: A dictionary visualization<br><img src=images/dict.png width=50>
-* `listviz()`: Horizontal list visualization<br><img src=images/list2.png width=300>
-* `lolviz()`: List of lists visualization with the first list vertical and the nested lists horizontal.<br><img src=images/lol2.png width=400>
-* `llistviz()`: Linked list visualization with horizontal orientation<br><img src=images/llist2.png width=140>
-* `treeviz()`: Binary trees showing top-down<br><img src=images/tree.png width=100>
+## Functionality
+
+There are currently a number of functions of interest that return `graphviz.files.Source` objects:
+
+* `listviz()`: Horizontal list visualization<br><img src=images/list2.png width=320>
+* `lolviz()`: List of lists visualization with the first list vertical and the nested lists horizontal.<br><img src=images/lol2.png width=460>
+* `treeviz()`: Binary trees visualized top-down ala computer science.<br><img src=images/tree.png width=190>
+* `objviz()`: Generic object graph visualization that knows how to find lists of lists (like `lolviz()`) and linked lists. Trees are also displayed reasonably, but with left to right orientation instead of top-down (a limitation of graphviz). Here is an example linked list and dictionary:<br><img src=images/llist2.png width=280><br><img src=images/dict.png width=60>
+* `callsviz()`: Visualize the call stack and anything pointed to by globals, locals, or parameters. You can limit the variables displayed by passing in a list of `varnames` as an argument.<br><img src=images/callstack.png width=240>
+* `callviz()`: Same as `classviz()` but displays only the current function's frame or you can pass in a Python stack frame object to display.
+* `strviz()`: Show a string like an array.<br><img src=images/string.png width=100>
+
+Given the return value in generic Python, simply call method `view()` on the returned object to display the visualization. From jupyter, call function `IPython.display.display()` with the returned object as an argument. Function arguments are in italics.
+
+Check out the [examples](examples.ipynb).
 
 ## Installation
 
-First you need graphviz. On a mac it's easy:
+First you need graphviz (more specifically the `dot` executable). On a mac it's easy:
 
 ```bash
 $ brew install graphviz
 ```
 
+Then just install the `lolviz` Python package:
+
 ```bash
 $ pip install lolviz
+```
+
+or upgrade to the latest version:
+
+
+```bash
+$ pip install -U lolviz
 ```
 
 ## Usage
@@ -28,7 +47,9 @@ From within generic Python, you can get a window to pop up using the `view()` me
 
 ```python
 from lolviz import *
-g = listviz(['hi','mom',{3,4},{"parrt":"user"}])
+data = ['hi','mom',{3,4},{"parrt":"user"}]
+g = listviz(data)
+print g.source # if you want to see the graphviz source
 g.view() # render and show graphviz.files.Source object
 ```
 
@@ -36,57 +57,20 @@ g.view() # render and show graphviz.files.Source object
 
 From within Jupyter notebooks you can avoid the `render()` call because Jupyter knows how to display `graphviz.files.Source` objects:
 
-<img src=images/jupyter.png width=600>
+<img src=images/jupyter.png width=620>
 
-You can look at a list of tuples as a list of list too:
+For more examples that you can cut-and-paste, please see the jupyter notebook full of [examples](examples.ipynb).
 
-<img src=images/lol3.png width=230>
+## Preferences
 
-Here's how to describe a hashtable with 3 elements in 2 different buckets:
+There are global preferences you can set that affect the display for long values:
 
-<img src=images/hashtable.png width=350>
-
-If you want the graphviz/dot source, use `source` field of returned `graphviz.files.Source` object.
-
-For 1.1, I added linked lists. Figuring out that layout was annoying. You're welcome. ;)
-
-<img src="images/llist.png" width=500>
-
-Here's an example of specifying lambda functions to extract values from nodes:
-
-<img src="images/tuplellist.png" width=450>
-
-Here's an example for binary trees:
-
-```python
-class Tree:
-    def __init__(self, value, left=None, right=None):
-        self.value = value
-        self.left = left
-        self.right = right
-
-root = Tree('parrt',
-            Tree('mary',
-                 Tree('jim',
-                      Tree('srinivasan'),
-                      Tree('april'))),
-            Tree('xue',None,Tree('mike')))
-treeviz(root)
-```
-
-<img src="images/tree2.png" width=190>
-
-And another:
-
-```python
-root = ('parrt',('mary',('srinivasan',None,None),('april',None,None)),None)
-treeviz(root, value=lambda t:t[0], left=lambda t:t[1], right=lambda t:t[2])
-```
-
-<img src="images/tree3.png" width=140>
+* `prefs.max_str_len` (Default 20). How many chars in a string representation of a value before we abbreviate with `...`. E.g.,:<br><img src="images/short-string.png" width=160>
+* `prefs.max_horiz_array_len` (Default 70) Lists can quickly become too wide and distort the visualization. This preference lets you set how long the combined string representations of the list values can get before we use a vertical representation of the list. E.g.,:<br><img src="images/tall-list.png" width=130>
 
 ## Implementation notes
 
+Mostly notes for parrt to remember things.
 ### Graphviz
 
 * Ugh. `shape=record` means html-labels can't use ports. warning!

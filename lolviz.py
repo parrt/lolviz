@@ -1,7 +1,9 @@
 """
-A small set of functions that display lists, dictionaries,
-and lists of lists in a reasonable manner using graphviz.
-Inspired by the object connectivity graphs in Pythontutor.com.
+A small set of functions that display simple data structures and
+arbitrary object graphs in a reasonable manner using graphviz.
+Even the call stack can be displayed well.
+
+This is inspired by the object connectivity graphs in Pythontutor.com.
 I love Pythontutor.com for interactive demos with the students,
 but for expository material that must stand on its own, it's
 useful to freeze dry / snapshot various states of execution.
@@ -21,8 +23,8 @@ GREEN = "#cfe2d4"
 
 class Prefs: pass
 prefs = Prefs()
-prefs.MAX_VALUE_LEN = 20       # how many chars before we abbreviate with ...?
-prefs.MAX_HORIZ_ARRAY_LEN = 70 # how many chars before it's too wide and we go vertical?
+prefs.max_str_len = 20         # how many chars before we abbreviate with ...?
+prefs.max_horiz_array_len = 70 # how many chars before it's too wide and we go vertical?
 
 def strviz(astring):
     s = """
@@ -91,54 +93,6 @@ def treeviz(root, leftfield='left', rightfield='right'):
 
     # s += obj_nodes(reachable)
     s += obj_edges(reachable)
-
-    s += "}\n"
-    return graphviz.Source(s)
-
-
-def treeviz_old(root,
-            valuefield='value', leftfield='left', rightfield='right',
-            value=None, left=None, right=None): # lambda/functions to obtain value/left/right fields
-
-    if value is None:
-        value = lambda p : getattr(p,valuefield)
-    if left is None:
-        left = lambda p : getattr(p,leftfield)
-    if right is None:
-        right = lambda p : getattr(p,rightfield)
-
-    nodes = []
-    def treewalk(t):
-        """Walk recursively to make a list of node definitions. Return the next node number"""
-        if t is None: return
-        html = treenode_html_old(value(t), leftfield, rightfield)
-        nodes.append('    node%d [space="0.0", margin="0.01", fontcolor="#444443", fontname="Helvetica", label=<%s>];\n' % (id(t), html))
-        treewalk(left(t))
-        treewalk(right(t))
-
-    treewalk(root)
-    e = edges(nodes)
-
-    return tree_graph_old(nodes,e)
-
-
-def tree_graph_old(nodes,edges):
-    s = """
-        digraph G {
-            nodesep=.2;
-            ranksep=.2;
-            node [shape=box, penwidth="0.5",width=.1,height=.1];
-
-    """
-
-    s += nodes
-
-    # draw edges
-    for e in edges:
-        p = e[0]
-        label = e[1]
-        q = e[2]
-        s += '    node%s:%s:n -> node%s [dir=both, tailclip=false, arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (id(p), label, id(q))
 
     s += "}\n"
     return graphviz.Source(s)
@@ -418,22 +372,6 @@ def elviz(el, showassoc):
     return els
 
 
-def label_elviz(label, el, showassoc, port=None):
-    if port is None:
-        port = label
-    return \
-        """
-        <table BORDER="0" CELLBORDER="1" CELLSPACING="0">
-          <tr>
-            <td cellspacing="0" bgcolor="#FBFEB0" border="1" sides="b" valign="top"><font color="#444443" point-size="9">%s</font></td>
-          </tr>
-          <tr>
-            <td port="%s" bgcolor="#FBFEB0" border="0" align="center"><font point-size="11">%s</font></td>
-          </tr>
-        </table>
-        """ % (label, port, elviz(el,showassoc))
-
-
 def list_node(elems, showassoc):
     html = listtable_html(elems, showassoc)
     return '    node%d [shape="box", space="0.0", margin="0.01", fontcolor="#444443", fontname="Helvetica", label=<%s>];\n' % (id(elems),html)
@@ -462,7 +400,7 @@ def listtable_html(values, showassoc):
 def gr_list_node(nodename, elems, bgcolor=YELLOW):
     if len(elems)>0:
         abbrev_values = abbrev_and_escape_values(elems) # compute just to see eventual size
-        if len(''.join(abbrev_values))>prefs.MAX_HORIZ_ARRAY_LEN:
+        if len(''.join(abbrev_values))>prefs.max_horiz_array_len:
             html = gr_vlist_html(elems, bgcolor)
         else:
             html = gr_listtable_html(elems, bgcolor)
@@ -483,7 +421,7 @@ def gr_listtable_html(values, bgcolor=YELLOW):
     newvalues = []
     for value in values:
         if value is not None:
-            if len(str(value)) > prefs.MAX_VALUE_LEN:
+            if len(str(value)) > prefs.max_str_len:
                 value = abbrev_and_escape(str(value))
             v = repr(value)
         else:
@@ -650,25 +588,6 @@ def gr_vtree_html(title, items, bgcolor=YELLOW, separator=None, leftfield='left'
     return header + blankrow.join(rows) + kidsep + kidnames + kidptrs + bottomsep + tail
 
 
-def treenode_html_old(nodevalue, leftfield, rightfield):
-    return \
-        """
-    <table BORDER="0" CELLBORDER="1" CELLSPACING="0">
-      <tr>
-        <td colspan="2" cellspacing="0" bgcolor="#FBFEB0" border="1" sides="b" valign="top"><font color="#444443" point-size="11">%s</font></td>
-      </tr>
-      <tr>
-        <td cellspacing="0" cellpadding="1" bgcolor="#D9E6F5" border="1" sides="r" valign="top"><font color="#444443" point-size="7">%s</font></td>
-        <td cellspacing="0" bgcolor="#D9E6F5" border="0" valign="top"><font color="#444443" point-size="7">%s</font></td>
-      </tr>
-      <tr>
-        <td port="left" bgcolor="#D9E6F5" border="1" sides="r" align="center"></td>
-        <td port="right" bgcolor="#D9E6F5" border="0" align="center"></td>
-      </tr>
-    </table>
-        """ % (elviz(nodevalue, True), leftfield, rightfield)
-
-
 def string_node(s):
     html = string_html(s)
     return '    node%d [width=0,height=0, color="#444443", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="%s", label=<%s>];\n' % (id(s),YELLOW,html)
@@ -693,10 +612,6 @@ def string_html(s):
 
     tail = "</table>\n"
     return header + '<tr><td></td>\n'+''.join(toprow)+'<td></td></tr>\n' + '<tr><td>\'</td>\n'+''.join(bottomrow)+'<td>\'</td></tr>' + tail
-
-
-def idx_elviz(idx, el, showassoc):
-    return label_elviz(str(idx), el, showassoc)
 
 
 def islol(elems):
@@ -875,7 +790,6 @@ def max_edges_in_connected_subgraphs(reachable, varnames=None):
         if m>0:
             max_edges_for_type[p.__class__] = max(max_edges_for_type[p.__class__], m)
 
-    print(max_edges_for_type)
     return max_edges_for_type
 
 
@@ -887,7 +801,7 @@ def edges_to_same_type(p, varnames):
         q = e[2]
         if type(p) == type(q):
             homo_edges.append(e)
-            print("CONNECTED", p, q, 'via', fieldname)
+            #print("CONNECTED", p, q, 'via', fieldname)
     return homo_edges
 
 
@@ -904,8 +818,8 @@ def abbrev_and_escape_values(elems):
 def abbrev_and_escape(s):
     if s is None:
         return s
-    if len(s) > prefs.MAX_VALUE_LEN:
-        s = s[:prefs.MAX_VALUE_LEN] + "..."
+    if len(s) > prefs.max_str_len:
+        s = s[:prefs.max_str_len] + "..."
     s = s.replace('&', '&amp;')
     s = s.replace('<', '&lt;')
     s = s.replace('>', '&gt;')

@@ -35,9 +35,9 @@ def g(x):
     print g1.source
     g1.view()
 
-def f(x,y):
-    t = "mom"
-    g(y)
+def f(x):
+    y = "powersaw"
+    callsviz().view() #varnames=['x','y','GREEN','BLUE']).view()
 
 def hashcode(o): return ord(o) # assume keys are single-element strings
 
@@ -65,11 +65,11 @@ root = Tree('parrt',
                       Tree('srinivasan'),
                       Tree('april'))),
             Tree('xue',None,mike))
-mike.backptr = root
+# mike.backptr = root
 
-t=treeviz(root)
-print t.source
-t.view()
+# t=treeviz(root)
+# print t.source
+# t.view()
 
 longlist = ['kkkkkkkkkkkkkkkkkkkkkkkkk','aaaaaaaaaaaaaaaaaaa', 'jjjjjjjjjjjjjjjjjjjjjjjjj', 'abcabc', 'kakakakakakakakakakakakakak']
 # objviz(longlist).view()
@@ -87,14 +87,20 @@ h = Node('blort', Node(head))
 # objviz(root).view()
 # lolviz(bucket).view()
 
+
 # g = llistviz(head)
 
 x = [User('name'+str(i)) for i in range(3)]
 
 # gg = callviz(varnames=['root', 'head'])
+# gg.view()
 # print gg.source
 # gg.view()
-#f(989,head)
+f(989)
+
+# data = ['hi','mom',{3,4},{"parrt":"user"}]
+# g = listviz(data)
+# g.view()
 
 # head2 = ('parrt',('mary',None))
 # objviz(head2).view()
