@@ -19,6 +19,11 @@ class User:
         self.name = name
 
 class Tree:
+    def __str__(self):
+        return "Tree(%s)" % (self.value)
+
+    def __repr__(self):
+        return str(self)
     def __init__(self, value, left=None, right=None):
         self.value = value
         self.left = left
@@ -62,7 +67,9 @@ root = Tree('parrt',
             Tree('xue',None,mike))
 mike.backptr = root
 
-# treeviz(root).view()
+t=treeviz(root)
+# print t.source
+t.view()
 
 longlist = ['kkkkkkkkkkkkkkkkkkkkkkkkk','aaaaaaaaaaaaaaaaaaa', 'jjjjjjjjjjjjjjjjjjjjjjjjj', 'abcabc', 'kakakakakakakakakakakakakak']
 # objviz(longlist).view()
@@ -84,7 +91,9 @@ h = Node('blort', Node(head))
 
 x = [User('name'+str(i)) for i in range(3)]
 
-callviz(varnames=['root', 'head']).view()
+# gg = callviz(varnames=['root', 'head'])
+# print gg.source
+# gg.view()
 #f(989,head)
 
 # head2 = ('parrt',('mary',None))

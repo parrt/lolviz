@@ -54,8 +54,59 @@ def listviz(elems, showassoc=True):
     return graphviz.Source(s)
 
 
-def treeviz(root):
-    return objviz(root, orientation="TD")
+def treeviz(root, leftfield='left', rightfield='right'):
+    if root is None:
+        return
+
+    # check that we have left, right fields
+    # if leftfield not in root.__dict__ and rightfield not in root.__dict__:
+    #     # if not, try to guess
+    #     edges = edges_to_same_type(root)
+    #     if len(edges)==2:
+    #         fields = [e[1] for e in edges]
+    # if len(edges)>2:
+    #     return objviz(root)
+
+    s = """
+    digraph G {
+        nodesep=.1;
+        ranksep=.3;
+        rankdir=TD;
+        node [penwidth="0.5", shape=box, width=.1, height=.1];
+
+    """
+
+    # nodes = []
+    # def treewalk(t):
+    #     """Walk recursively to make a list of nodes (DF order)"""
+    #     if t is None: return
+    #     nodes.append(t)
+    #     treewalk(left(t))
+    #     treewalk(right(t))
+    #
+    # treewalk(root)
+
+    reachable = closure(root)
+
+    for p in reachable:
+        nodename = "node%d" % id(p)
+        fields = []
+        kids = [(k,k,getattr(p,k)) for k in [leftfield, rightfield]]
+        for k, v in p.__dict__.items():
+            if k==leftfield or k==rightfield:
+                continue
+            if isatom(v):
+                fields.append((k, k, v))
+            else:
+                fields.append((k, k, None))
+        s += '// %s TREE node with fields\n' % p.__class__.__name__
+        s += gr_vtree_node(nodename, fields, separator=None)
+
+    # s += obj_nodes(reachable)
+    s += obj_edges(reachable)
+
+    s += "}\n"
+    return graphviz.Source(s)
 
 
 def treeviz_old(root,
@@ -73,7 +124,7 @@ def treeviz_old(root,
     def treewalk(t):
         """Walk recursively to make a list of node definitions. Return the next node number"""
         if t is None: return
-        html = treenode_html(value(t), leftfield, rightfield)
+        html = treenode_html_old(value(t), leftfield, rightfield)
         nodes.append('    node%d [space="0.0", margin="0.01", fontcolor="#444443", fontname="Helvetica", label=<%s>];\n' % (id(t), html))
         treewalk(left(t))
         treewalk(right(t))
@@ -81,10 +132,10 @@ def treeviz_old(root,
     treewalk(root)
     e = edges(nodes)
 
-    return tree_graph(nodes,e)
+    return tree_graph_old(nodes,e)
 
 
-def tree_graph(nodes,edges):
+def tree_graph_old(nodes,edges):
     s = """
         digraph G {
             nodesep=.2;
@@ -104,6 +155,7 @@ def tree_graph(nodes,edges):
 
     s += "}\n"
     return graphviz.Source(s)
+
 
 def lolviz(table, showassoc=True):
     """
@@ -533,7 +585,78 @@ def gr_vlist_html(elems, bgcolor=YELLOW):
     return gr_dict_html(title=None, items=items, separator=None, bgcolor=bgcolor)
 
 
-def treenode_html(nodevalue, leftfield, rightfield):
+def gr_vtree_node(nodename, items, bgcolor=YELLOW, separator=None, leftfield='left', rightfield='right'):
+    html = gr_vtree_html(items, bgcolor, separator)
+    return '%s [margin="0.03", color="#444443", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="%s", label=<%s>];\n' % (nodename,bgcolor,html)
+
+
+def gr_vtree_html(items, bgcolor=YELLOW, separator=None, leftfield='left', rightfield='right'):
+    header = '<table BORDER="0" CELLPADDING="0" CELLBORDER="1" CELLSPACING="0">\n'
+
+    rows = []
+    blankrow = '<tr><td colspan="3" cellpadding="1" border="0" bgcolor="%s"></td></tr>' % (bgcolor)
+
+    title = "Tree"
+    if title is not None:
+        title = '<tr><td cellspacing="0" colspan="3" cellpadding="0" bgcolor="%s" border="1" sides="b" align="center"><font color="#444443" FACE="Times-Italic" point-size="11">%s</font></td></tr>\n' % (bgcolor, title)
+        rows.append(title)
+
+    if len(items)>0:
+        for label,key,value in items:
+            font = "Helvetica"
+            if separator is not None:
+                name = '<td port="%s_label" cellspacing="0" cellpadding="0" bgcolor="%s" border="0" align="right"><font face="%s" color="#444443" point-size="11">%s </font></td>\n' % (label, bgcolor, font, key)
+                sep = '<td cellpadding="0" border="0" valign="bottom"><font color="#444443" point-size="9">%s</font></td>' % separator
+            else:
+                name = '<td port="%s_label" cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="r" align="right"><font face="%s" color="#444443" point-size="11">%s </font></td>\n' % (label, bgcolor, font, key)
+                sep = '<td cellspacing="0" cellpadding="0" border="0"></td>'
+
+            if value is not None:
+                v = abbrev_and_escape(str(value))
+                v = repr(v)
+            else:
+                v = "   "
+            value = '<td port="%s" cellspacing="0" cellpadding="1" bgcolor="%s" border="0" align="left"><font color="#444443" point-size="11"> %s</font></td>\n' % (label, bgcolor, v)
+            row = '<tr>' + name + sep + value + '</tr>\n'
+            rows.append(row)
+    else:
+        rows.append('<tr><td cellspacing="0" cellpadding="0" border="0"><font point-size="9"> ... </font></td></tr>\n')
+
+    if separator is not None:
+        sep = '<td cellpadding="0" bgcolor="%s" border="0" valign="bottom"><font color="#444443" point-size="15">%s</font></td>' % (bgcolor,separator)
+    else:
+        sep = '<td cellspacing="0" cellpadding="0" bgcolor="%s" border="0"></td>' % bgcolor
+
+    kidsep = """
+    <tr><td colspan="3" cellpadding="0" border="1" sides="b" height="3"></td></tr>
+    """ + blankrow
+
+
+    kidnames = """
+    <tr>
+    <td cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="1" sides="r" align="center"><font color="#444443" point-size="6">%s</font></td>
+    %s
+    <td cellspacing="0" cellpadding="1" bgcolor="$bgcolor$" border="0" align="center"><font color="#444443" point-size="6">%s</font></td>
+    </tr>
+    """ % (leftfield, sep, rightfield)
+
+    kidptrs = """
+    <tr>
+    <td port="%s" cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="1" sides="r" align="center" height="12"><font color="#444443" point-size="7"> </font></td>
+    %s
+    <td port="%s" cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="0" align="center" height="12"><font color="#444443" point-size="7"> </font></td>
+    </tr>
+    """ % (leftfield, sep, rightfield)
+
+    kidsep = kidsep.replace('$bgcolor$', bgcolor)
+    kidnames = kidnames.replace('$bgcolor$', bgcolor)
+    kidptrs = kidptrs.replace('$bgcolor$', bgcolor)
+
+    tail = "</table>\n"
+    return header + blankrow.join(rows) + kidsep + kidnames + kidptrs + tail
+
+
+def treenode_html_old(nodevalue, leftfield, rightfield):
     return \
         """
     <table BORDER="0" CELLBORDER="1" CELLSPACING="0">
@@ -699,12 +822,11 @@ def connected_subgraphs(reachable, varnames=None):
     max_edges_for_type = max_edges_in_connected_subgraphs(reachable, varnames)
 
     reachable = closure(reachable, varnames)
+    reachable = [p for p in reachable if isplainobj(p)]
     subgraphs = [] # list of sets of obj id()s
     subgraphobjs = [] # list of sets of obj ptrs (parallel list to track objs since can't hash on some objs like lists/sets as keys)
     type_fieldname_map = {}
     for p in reachable:
-        if not isplainobj(p):
-            continue
         edges = node_edges(p, varnames)
         for e in edges:
             fieldname = e[1]
