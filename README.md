@@ -15,7 +15,7 @@ There are currently a number of functions of interest that return `graphviz.file
 * `treeviz()`: Binary trees visualized top-down ala computer science.<br><img src=images/tree.png width=190>
 * `objviz()`: Generic object graph visualization that knows how to find lists of lists (like `lolviz()`) and linked lists. Trees are also displayed reasonably, but with left to right orientation instead of top-down (a limitation of graphviz). Here is an example linked list and dictionary:<br><img src=images/llist2.png width=280><br><img src=images/dict.png width=60>
 * `callsviz()`: Visualize the call stack and anything pointed to by globals, locals, or parameters. You can limit the variables displayed by passing in a list of `varnames` as an argument.<br><img src=images/callstack.png width=240>
-* `callviz()`: Same as `calssviz()` but displays only the current function's frame or you can pass in a Python stack frame object to display.
+* `callviz()`: Same as `callsviz()` but displays only the current function's frame or you can pass in a Python stack frame object to display.
 * `strviz()`: Show a string like an array.<br><img src=images/string.png width=100>
 
 Given the return value in generic Python, simply call method `view()` on the returned object to display the visualization. From jupyter, call function `IPython.display.display()` with the returned object as an argument. Function arguments are in italics.
