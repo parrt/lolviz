@@ -1,6 +1,6 @@
 # lolviz
 
-A simple Python data-structure visualization tool that started out as a **L**ist **O**f **L**ists (lol) visualizer but now handles arbitrary object graphs, including function call stacks! lolviz tries to look out for and format nicely common data structures such as lists, dictionaries, linked lists, and binary trees. The call stack can also be visualized. This package is primarily for use in teaching and presentations with Jupyter notebooks, but could also be used for debugging data structures.
+A simple Python data-structure visualization tool that started out as a **L**ist **O**f **L**ists (lol) visualizer but now handles arbitrary object graphs, including function call stacks! lolviz tries to look out for and format nicely common data structures such as lists, dictionaries, linked lists, and binary trees. This package is primarily for use in teaching and presentations with Jupyter notebooks, but could also be used for debugging data structures.
 
 It seems that I'm always trying to describe how data is laid out in memory to students. There are really great data structure visualization tools but I wanted something I could use directly via Python in Jupyter notebooks. 
 
