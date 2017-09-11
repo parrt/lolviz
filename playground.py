@@ -37,7 +37,7 @@ def g(x):
 
 def f(x):
     y = "powersaw"
-    callsviz().view() #varnames=['x','y','GREEN','BLUE']).view()
+    callsviz(varnames=['x','y','GREEN','BLUE']).view()
 
 def hashcode(o): return ord(o) # assume keys are single-element strings
 
@@ -63,7 +63,7 @@ table[4].append( [9,8,7,6] )
 # print ggg.source
 # ggg.view()
 
-callsviz(varnames=['value']).view()
+# callsviz(varnames=['value','x','GREEN','BLUE']).view()
 
 mike = Tree('mike')
 root = Tree('parrt',
@@ -103,7 +103,7 @@ x = [User('name'+str(i)) for i in range(3)]
 # gg.view()
 # print gg.source
 # gg.view()
-#f(989)
+f(989)
 
 # data = ['hi','mom',{3,4},{"parrt":"user"}]
 # g = listviz(data)
