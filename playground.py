@@ -58,10 +58,12 @@ table[4].append( [9,8,7,6] )
 # print g2.source
 # g2.view()
 
-table = [[]]*5
-ggg=lolviz(table)
-print ggg.source
-ggg.view()
+# table = [[]]*5
+# ggg=lolviz(table)
+# print ggg.source
+# ggg.view()
+
+callsviz(varnames=['value']).view()
 
 mike = Tree('mike')
 root = Tree('parrt',

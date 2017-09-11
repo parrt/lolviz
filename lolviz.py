@@ -127,10 +127,6 @@ def lolviz(table, showassoc=True):
 
     for sublist in sublists:
         nodename = "node%d" % id(sublist)
-        # if len(sublist)==0:
-        #     s += 'node%d [margin="0.01", shape=none label=<<font face="Times-Italic" color="#444443" point-size="9">empty list</font>>];\n' % id(sublist)
-        # else:
-        #     s += gr_list_node(nodename, sublist)
         s += gr_list_node(nodename, sublist)
 
     i = 0
@@ -471,8 +467,9 @@ def gr_dict_html(title, items, highlight=None, bgcolor=YELLOW, separator="&rarr;
                 sep = '<td cellspacing="0" cellpadding="0" border="0"></td>'
 
             if value is not None:
-                v = abbrev_and_escape(str(value))
-                v = repr(v)
+                if len(str(value)) > prefs.max_str_len:
+                    value = abbrev_and_escape(str(value))
+                v = repr(value)
             else:
                 v = "   "
             value = '<td port="%s" cellspacing="0" cellpadding="1" bgcolor="%s" border="0" align="left"><font color="#444443" point-size="11"> %s</font></td>\n' % (label, bgcolor, v)
