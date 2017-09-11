@@ -38,7 +38,7 @@ def g(x):
 
 def f(x):
     y = "powersaw"
-    callsviz(varnames=['x','y','GREEN','BLUE','ctr','head','users']).view()
+    callsviz(varnames=['x','y','GREEN','BLUE','ctr','head','users','root']).view()
 
 def hashcode(o): return ord(o) # assume keys are single-element strings
 
@@ -73,7 +73,7 @@ root = Tree('parrt',
                       Tree('srinivasan'),
                       Tree('april'))),
             Tree('xue',None,mike))
-# mike.backptr = root
+mike.backptr = root
 
 from collections import Counter
 
