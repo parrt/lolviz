@@ -51,7 +51,7 @@ From within generic Python, you can get a window to pop up using the `view()` me
 from lolviz import *
 data = ['hi','mom',{3,4},{"parrt":"user"}]
 g = listviz(data)
-print g.source # if you want to see the graphviz source
+print(g.source) # if you want to see the graphviz source
 g.view() # render and show graphviz.files.Source object
 ```
 
