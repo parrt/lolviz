@@ -15,8 +15,9 @@ class Node:
         self.next = next
 
 class User:
-    def __init__(self, name):
+    def __init__(self, name, ID):
         self.name = name
+        self.ID = ID
 
 class Tree:
     def __str__(self):
@@ -37,7 +38,7 @@ def g(x):
 
 def f(x):
     y = "powersaw"
-    callsviz(varnames=['x','y','GREEN','BLUE','ctr']).view()
+    callsviz(varnames=['x','y','GREEN','BLUE','ctr','head','users']).view()
 
 def hashcode(o): return ord(o) # assume keys are single-element strings
 
@@ -76,7 +77,10 @@ root = Tree('parrt',
 
 from collections import Counter
 
-ctr = Counter(['Date','Open','High','Low','Close','Volume'])
+text = "the cat in the hat sat"
+ctr = Counter(text.split(' '))
+# objviz(ctr).view()
+# exit(3)
 
 # t=treeviz(root)
 # print t.source
@@ -101,7 +105,7 @@ h = Node('blort', Node(head))
 
 # g = llistviz(head)
 
-x = [User('name'+str(i)) for i in range(3)]
+users = [User('name'+str(i), i+100) for i in range(3)]
 
 # gg = callviz(varnames=['root', 'head'])
 # gg.view()

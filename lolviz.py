@@ -131,7 +131,7 @@ def lolviz(table, showassoc=True):
 
     i = 0
     for sublist in sublists:
-        s += 'node%d:%s -> node%d:w [arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (id(table), str(i), id(sublist))
+        s += 'node%d:%s -> node%d:w [arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4, weight=100]\n' % (id(table), str(i), id(sublist))
         i += 1
 
     s += "}\n"
@@ -287,7 +287,7 @@ def obj_node(p, varnames=None):
         s += '// FRAME %s\n' % caller_scopename
         s += gr_dict_node(nodename, caller_scopename, items, highlight=argnames, bgcolor=BLUE,
                           separator=None, reprkey=False)
-    elif type(p) == dict:
+    elif isinstance(p,dict):
         # print "DRAW DICT", p, '@ node' + nodename
         items = []
         i = 0
@@ -344,7 +344,7 @@ def obj_edges(nodes, varnames=None):
     es = edges(nodes, varnames)
     for (p, label, q) in es:
         if type(p) != types.FrameType and type(p) != dict and type(p) != tuple and hasattr(p,"__iter__") and not isatomlist(p):  # edges start at right edge not center for vertical lists
-            s += 'node%d:%s -> node%d:w [arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (id(p), label, id(q))
+            s += 'node%d:%s -> node%d:w [arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4, weight=100]\n' % (id(p), label, id(q))
         else:
             s += 'node%d:%s:c -> node%d [dir=both, tailclip=false, arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (id(p), label, id(q))
 
