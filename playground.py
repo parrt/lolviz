@@ -58,6 +58,11 @@ table[4].append( [9,8,7,6] )
 # print g2.source
 # g2.view()
 
+table = [[]]*5
+ggg=lolviz(table)
+print ggg.source
+ggg.view()
+
 mike = Tree('mike')
 root = Tree('parrt',
             Tree('mary',
@@ -96,7 +101,7 @@ x = [User('name'+str(i)) for i in range(3)]
 # gg.view()
 # print gg.source
 # gg.view()
-f(989)
+#f(989)
 
 # data = ['hi','mom',{3,4},{"parrt":"user"}]
 # g = listviz(data)

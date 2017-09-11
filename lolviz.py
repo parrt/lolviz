@@ -127,10 +127,11 @@ def lolviz(table, showassoc=True):
 
     for sublist in sublists:
         nodename = "node%d" % id(sublist)
-        if len(sublist)==0:
-            s += 'node%d [margin="0.01", shape=none label=<<font face="Times-Italic" color="#444443" point-size="9">empty list</font>>];\n' % id(sublist)
-        else:
-            s += gr_list_node(nodename, sublist)
+        # if len(sublist)==0:
+        #     s += 'node%d [margin="0.01", shape=none label=<<font face="Times-Italic" color="#444443" point-size="9">empty list</font>>];\n' % id(sublist)
+        # else:
+        #     s += gr_list_node(nodename, sublist)
+        s += gr_list_node(nodename, sublist)
 
     i = 0
     for sublist in sublists:
@@ -398,6 +399,7 @@ def listtable_html(values, showassoc):
 
 
 def gr_list_node(nodename, elems, bgcolor=YELLOW):
+    shape="box"
     if len(elems)>0:
         abbrev_values = abbrev_and_escape_values(elems) # compute just to see eventual size
         if len(''.join(abbrev_values))>prefs.max_horiz_array_len:
@@ -405,8 +407,9 @@ def gr_list_node(nodename, elems, bgcolor=YELLOW):
         else:
             html = gr_listtable_html(elems, bgcolor)
     else:
-        html = " "
-    return '%s [shape="box", space="0.0", margin="0.01", fontcolor="#444443", fontname="Helvetica", label=<%s>];\n' % (nodename,html)
+        shape = "none"
+        html = '<font face="Times-Italic" color="#444443" point-size="9">empty list</font>'
+    return '%s [shape="%s", space="0.0", margin="0.01", fontcolor="#444443", fontname="Helvetica", label=<%s>];\n' % (nodename,shape,html)
 
 
 def gr_listtable_html(values, bgcolor=YELLOW):
