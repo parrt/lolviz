@@ -37,10 +37,14 @@ def g(x):
     g1.view()
 
 def f(x):
-    y = "powersaw"
-    callsviz(varnames=['x','y','GREEN','BLUE','ctr','head','users','root']).view()
+    a = {'hi','mom'}
+    xxx = callsviz(varnames=['x','a','y','BLUE','ctr','head','users','root']).view()
+    print xxx.source
+    xxx.view()
 
 def hashcode(o): return ord(o) # assume keys are single-element strings
+
+foo = [99,100]
 
 table = [ [], [], [], [], [] ]
 key = 'a'

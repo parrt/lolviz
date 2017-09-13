@@ -25,6 +25,7 @@ class Prefs: pass
 prefs = Prefs()
 prefs.max_str_len = 20         # how many chars before we abbreviate with ...?
 prefs.max_horiz_array_len = 70 # how many chars before it's too wide and we go vertical?
+prefs.max_list_elems = 15      # how many elements max to display in list (unused so far)
 
 def strviz(astring):
     s = """
@@ -184,12 +185,13 @@ def callsviz(callstack=None, varnames=None):
         s += 'node%d -> node%d [style=invis, weight=100]\n' % (id(this), id(callee))
     s += "}\n\n"
 
-    # find all reachable objects
-    caller = callstack[0]
-    reachable = closure(caller, varnames)
+    # find all reachable objects from call stack
+    reachable = []
+    for f in callstack:
+        reachable.extend( closure(f, varnames) )
+    reachable = uniq(reachable)
 
     s += obj_nodes(reachable)
-
     s += obj_edges(reachable)
     s += obj_edges(callstack, varnames)
     s += "}\n"
@@ -250,8 +252,6 @@ def obj_nodes(nodes):
         if not found:
             s += obj_node(p)
 
-    # for p in nodes:
-    #     s += obj_node(p)
     return s
 
 
@@ -824,6 +824,16 @@ def abbrev_and_escape(s):
     s = s.replace('<', '&lt;')
     s = s.replace('>', '&gt;')
     return s
+
+
+def uniq(elems):
+    seen = set()
+    u = []
+    for e in elems:
+        if id(e) not in seen:
+            seen.add(id(e))
+            u.append(e)
+    return u
 
 
 def error(*args, **kwargs):
