@@ -488,8 +488,16 @@ def gr_dict_html(title, items, highlight=None, bgcolor=YELLOW, separator="&rarr;
         title = '<tr><td cellspacing="0" colspan="3" cellpadding="0" bgcolor="%s" border="1" sides="b" align="center"><font color="#444443" FACE="Times-Italic" point-size="11">%s</font></td></tr>\n' % (bgcolor, title)
         rows.append(title)
 
+    ptrs = []
+    atoms = []
+    for it in items:
+        if isatom(it[2]):
+            atoms.append(it)
+        else:
+            ptrs.append(it)
+
     if len(items)>0:
-        for label,key,value in items:
+        for label,key,value in atoms + ptrs: # do atoms first then ptrs
             font = "Helvetica"
             if highlight is not None and key in highlight:
                 font = "Times-Italic"
