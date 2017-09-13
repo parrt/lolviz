@@ -423,6 +423,8 @@ def gr_listtable_html(values, title=None, bgcolor=YELLOW, showindexes=True):
 
     if title is not None:
         titlerow = '<tr><td cellspacing="0" colspan="%d" cellpadding="0" bgcolor="%s" border="1" sides="b" align="center"><font color="#444443" FACE="Times-Italic" point-size="9">%s</font></td></tr>\n' % (len(values), bgcolor, title)
+    else:
+        titlerow = ''
 
     index_html = '<td cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="br" valign="top"><font color="#444443" point-size="9">%d</font></td>\n'
     value_html = '<td port="%d" bgcolor="%s" border="1" sides="r" align="center"><font point-size="11">%s</font></td>\n'
