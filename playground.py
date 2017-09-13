@@ -38,11 +38,9 @@ def g(x):
 
 def f(x):
     # a = {(1,2),(3,4)}
-    a = {'hi','mom'}
+    a = {'hi','mom','mom1','mom2','mom3','mom4','mom5','mom6','mom7','mom8','mom9','mom10','mom','mom'}
     b = set()
-    xxx = callsviz(varnames=['x','a','b','y','BLUE','ctr','head','users','root']).view()
-    print xxx.source
-    xxx.view()
+    callsviz(varnames=['a','b']).view() #,'x',''y','BLUE','ctr','head','users','root']).view()
 
 def hashcode(o): return ord(o) # assume keys are single-element strings
 
