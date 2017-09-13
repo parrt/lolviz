@@ -328,7 +328,7 @@ def obj_node(p, varnames=None):
                 elems.append(None)
         s += '// VERTICAL LIST or ITERATABLE\n'
         if isinstance(p,set):
-            s += gr_vlol_node(nodename, elems, showindexes=False)
+            s += gr_vlol_node(nodename, elems, title='Set', showindexes=False)
         else:
             s += gr_vlol_node(nodename, elems)
 
@@ -409,17 +409,20 @@ def gr_list_node(nodename, elems, bgcolor=YELLOW):
     if len(elems)>0:
         abbrev_values = abbrev_and_escape_values(elems) # compute just to see eventual size
         if len(''.join(abbrev_values))>prefs.max_horiz_array_len:
-            html = gr_vlist_html(elems, bgcolor)
+            html = gr_vlist_html(elems, bgcolor=bgcolor)
         else:
-            html = gr_listtable_html(elems, bgcolor)
+            html = gr_listtable_html(elems, bgcolor=bgcolor)
     else:
         shape = "none"
         html = '<font face="Times-Italic" color="#444443" point-size="9">empty list</font>'
     return '%s [shape="%s", space="0.0", margin="0.01", fontcolor="#444443", fontname="Helvetica", label=<%s>];\n' % (nodename,shape,html)
 
 
-def gr_listtable_html(values, bgcolor=YELLOW, showindexes=True):
+def gr_listtable_html(values, title=None, bgcolor=YELLOW, showindexes=True):
     header = '<table BORDER="0" CELLBORDER="0" CELLSPACING="0">\n'
+
+    if title is not None:
+        titlerow = '<tr><td cellspacing="0" colspan="%d" cellpadding="0" bgcolor="%s" border="1" sides="b" align="center"><font color="#444443" FACE="Times-Italic" point-size="9">%s</font></td></tr>\n' % (len(values), bgcolor, title)
 
     index_html = '<td cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="br" valign="top"><font color="#444443" point-size="9">%d</font></td>\n'
     value_html = '<td port="%d" bgcolor="%s" border="1" sides="r" align="center"><font point-size="11">%s</font></td>\n'
@@ -448,11 +451,11 @@ def gr_listtable_html(values, bgcolor=YELLOW, showindexes=True):
 
     tail = "</table>\n"
     if showindexes:
-        return header + '<tr>\n'+''.join(toprow)+'</tr>\n' + '<tr>\n'+''.join(bottomrow)+'</tr>' + tail
+        return header + titlerow + '<tr>\n'+''.join(toprow)+'</tr>\n' + '<tr>\n'+''.join(bottomrow)+'</tr>' + tail
     else:
         leftcurly = '' #''<td cellspacing="0" cellpadding="0" bgcolor="'+bgcolor+'">{</td>'
         rightcurly = '' #''<td cellspacing="0" cellpadding="0" bgcolor="'+bgcolor+'">}</td>'
-        return header + '<tr>\n'+leftcurly+''.join(bottomrow)+rightcurly+'</tr>' + tail
+        return header + titlerow + '<tr>\n'+leftcurly+''.join(bottomrow)+rightcurly+'</tr>' + tail
 
 
 def gr_set_node(nodename, elems, bgcolor=YELLOW):
@@ -460,32 +463,14 @@ def gr_set_node(nodename, elems, bgcolor=YELLOW):
     if len(elems)>0:
         abbrev_values = abbrev_and_escape_values(elems) # compute just to see eventual size
         if len(''.join(abbrev_values))>prefs.max_horiz_array_len:
-            html = gr_vlol_html(elems, bgcolor, showindexes=False, showelems=True)
+            html = gr_vlol_html(elems, title='Set', bgcolor=bgcolor, showindexes=False, showelems=True)
         else:
-            html = gr_listtable_html(elems, bgcolor, showindexes=False)
+            html = gr_listtable_html(elems, title='Set', bgcolor=bgcolor, showindexes=False)
     else:
         shape = "none"
         html = '<font face="Times-Italic" color="#444443" point-size="9">empty list</font>'
     return '%s [shape="%s", space="0.0", margin="0.01", fontcolor="#444443", fontname="Helvetica", label=<%s>];\n' % (nodename,shape,html)
 
-
-# def gr_vset_html(elems, bgcolor=YELLOW):
-#     if len(elems)==0:
-#         return " "
-#     header = '<table BORDER="0" CELLPADDING="0" CELLBORDER="0" CELLSPACING="0">\n'
-#
-#     rows = []
-#     for i,el in enumerate(elems):
-#         if i==len(elems)-1:
-#             value = '<td port="%d" BORDER="0" cellpadding="3" cellspacing="0" bgcolor="%s" align="center"><font color="#444443" point-size="9">%s</font></td>\n' % (i, bgcolor, repr(el))
-#         else:
-#             value = '<td port="%d" BORDER="1" cellpadding="2" cellspacing="0" sides="b" bgcolor="%s" align="center"><font color="#444443" point-size="9">%s</font></td>\n' % (i, bgcolor, repr(el))
-#         row = '<tr>' + value + '</tr>\n'
-#         rows.append(row)
-#
-#     tail = "</table>\n"
-#     return header + ''.join(rows) + tail
-#
 
 def gr_dict_node(nodename, title, items, highlight=None, bgcolor=YELLOW, separator="&rarr;", reprkey=True):
     html = gr_dict_html(title, items, highlight, bgcolor, separator, reprkey)
@@ -529,17 +514,22 @@ def gr_dict_html(title, items, highlight=None, bgcolor=YELLOW, separator="&rarr;
     return header + blankrow.join(rows) + tail
 
 
-def gr_vlol_node(nodename, elems, bgcolor=GREEN, showindexes=True, showelems=True):
-    html = gr_vlol_html(elems, bgcolor, showindexes, showelems)
+def gr_vlol_node(nodename, elems, title=None, bgcolor=GREEN, showindexes=True, showelems=True):
+    html = gr_vlol_html(elems, title, bgcolor=bgcolor, showindexes=showindexes, showelems=showelems)
     return '%s [color="#444443", margin="0.02", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="%s", label=<%s>];\n' % (nodename,bgcolor,html)
 
 
-def gr_vlol_html(elems, bgcolor=GREEN, showindexes=True, showelems=False):
+def gr_vlol_html(elems, title=None, bgcolor=GREEN, showindexes=True, showelems=False):
     if len(elems)==0:
         return " "
     header = '<table BORDER="0" CELLPADDING="0" CELLBORDER="0" CELLSPACING="0">\n'
 
     rows = []
+
+    if title is not None:
+        titlerow = '<tr><td cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="b" align="center"><font color="#444443" FACE="Times-Italic" point-size="9">%s</font></td></tr>\n' % (bgcolor, title)
+        rows.append(titlerow)
+
     for i,el in enumerate(elems):
         if showindexes:
             v = str(i)
