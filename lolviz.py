@@ -516,7 +516,7 @@ def gr_dict_html(title, items, highlight=None, bgcolor=YELLOW, separator="&rarr;
     return header + blankrow.join(rows) + tail
 
 
-def gr_vlol_node(nodename, elems, title=None, bgcolor=GREEN, showindexes=True, showelems=True):
+def gr_vlol_node(nodename, elems, title=None, bgcolor=GREEN, showindexes=True, showelems=False):
     html = gr_vlol_html(elems, title, bgcolor=bgcolor, showindexes=showindexes, showelems=showelems)
     return '%s [color="#444443", margin="0.02", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="%s", label=<%s>];\n' % (nodename,bgcolor,html)
 
