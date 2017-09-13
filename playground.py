@@ -37,8 +37,10 @@ def g(x):
     g1.view()
 
 def f(x):
+    # a = {(1,2),(3,4)}
     a = {'hi','mom'}
-    xxx = callsviz(varnames=['x','a','y','BLUE','ctr','head','users','root']).view()
+    b = set()
+    xxx = callsviz(varnames=['x','a','b','y','BLUE','ctr','head','users','root']).view()
     print xxx.source
     xxx.view()
 

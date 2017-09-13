@@ -300,7 +300,9 @@ def obj_node(p, varnames=None):
             i += 1
         s += '// DICT\n'
         s += gr_dict_node(nodename, None, items)
-    elif type(p)==list and len(p)==0: # special case "empty list"
+    elif isinstance(p,set) and len(p) == 0:  # special case "empty set"
+        s += 'node%d [margin="0.03", shape=none label=<<font face="Times-Italic" color="#444443" point-size="9">empty set</font>>];\n' % id(p)
+    elif isinstance(p,list) and len(p)==0: # special case "empty list"
         s += 'node%d [margin="0.03", shape=none label=<<font face="Times-Italic" color="#444443" point-size="9">empty list</font>>];\n' % id(p)
     elif hasattr(p, "__iter__") and isatomlist(p) or type(p)==tuple:
         # print "DRAW LIST", p, '@ node' + nodename
@@ -310,8 +312,12 @@ def obj_node(p, varnames=None):
                 elems.append(el)
             else:
                 elems.append(None)
-        s += '// LIST or ITERATABLE\n'
-        s += gr_list_node(nodename, elems)
+        if isinstance(p,set):
+            s += '// SET of atoms\n'
+            s += gr_set_node(nodename, elems)
+        else:
+            s += '// LIST or ITERATABLE of atoms\n'
+            s += gr_list_node(nodename, elems)
     elif hasattr(p, "__iter__"):
         # print "DRAW VERTICAL LIST", p, '@ node' + nodename
         elems = []
@@ -408,7 +414,7 @@ def gr_list_node(nodename, elems, bgcolor=YELLOW):
     return '%s [shape="%s", space="0.0", margin="0.01", fontcolor="#444443", fontname="Helvetica", label=<%s>];\n' % (nodename,shape,html)
 
 
-def gr_listtable_html(values, bgcolor=YELLOW):
+def gr_listtable_html(values, bgcolor=YELLOW, showindexes=True):
     header = '<table BORDER="0" CELLBORDER="0" CELLSPACING="0">\n'
 
     index_html = '<td cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="br" valign="top"><font color="#444443" point-size="9">%d</font></td>\n'
@@ -437,7 +443,26 @@ def gr_listtable_html(values, bgcolor=YELLOW):
         bottomrow.append(last_value_html % (lastindex, bgcolor,values[lastindex]))
 
     tail = "</table>\n"
-    return header + '<tr>\n'+''.join(toprow)+'</tr>\n' + '<tr>\n'+''.join(bottomrow)+'</tr>' + tail
+    if showindexes:
+        return header + '<tr>\n'+''.join(toprow)+'</tr>\n' + '<tr>\n'+''.join(bottomrow)+'</tr>' + tail
+    else:
+        leftcurly = '' #''<td cellspacing="0" cellpadding="0" bgcolor="'+bgcolor+'">{</td>'
+        rightcurly = '' #''<td cellspacing="0" cellpadding="0" bgcolor="'+bgcolor+'">}</td>'
+        return header + '<tr>\n'+leftcurly+''.join(bottomrow)+rightcurly+'</tr>' + tail
+
+
+def gr_set_node(nodename, elems, bgcolor=YELLOW):
+    shape="box"
+    if len(elems)>0:
+        abbrev_values = abbrev_and_escape_values(elems) # compute just to see eventual size
+        if len(''.join(abbrev_values))>prefs.max_horiz_array_len:
+            html = gr_vlist_html(elems, bgcolor)
+        else:
+            html = gr_listtable_html(elems, bgcolor, showindexes=False)
+    else:
+        shape = "none"
+        html = '<font face="Times-Italic" color="#444443" point-size="9">empty list</font>'
+    return '%s [shape="%s", space="0.0", margin="0.01", fontcolor="#444443", fontname="Helvetica", label=<%s>];\n' % (nodename,shape,html)
 
 
 def gr_dict_node(nodename, title, items, highlight=None, bgcolor=YELLOW, separator="&rarr;", reprkey=True):
