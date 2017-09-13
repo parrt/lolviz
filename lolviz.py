@@ -327,7 +327,11 @@ def obj_node(p, varnames=None):
             else:
                 elems.append(None)
         s += '// VERTICAL LIST or ITERATABLE\n'
-        s += gr_vlol_node(nodename, elems)
+        if isinstance(p,set):
+            s += gr_vlol_node(nodename, elems, showindexes=False)
+        else:
+            s += gr_vlol_node(nodename, elems)
+
     elif hasattr(p, "__dict__"): # generic object
         # print "DRAW OBJ", p, '@ node' + nodename
         items = []
@@ -456,7 +460,7 @@ def gr_set_node(nodename, elems, bgcolor=YELLOW):
     if len(elems)>0:
         abbrev_values = abbrev_and_escape_values(elems) # compute just to see eventual size
         if len(''.join(abbrev_values))>prefs.max_horiz_array_len:
-            html = gr_vset_html(elems, bgcolor)
+            html = gr_vlol_html(elems, bgcolor, showindexes=False, showelems=True)
         else:
             html = gr_listtable_html(elems, bgcolor, showindexes=False)
     else:
@@ -465,23 +469,23 @@ def gr_set_node(nodename, elems, bgcolor=YELLOW):
     return '%s [shape="%s", space="0.0", margin="0.01", fontcolor="#444443", fontname="Helvetica", label=<%s>];\n' % (nodename,shape,html)
 
 
-def gr_vset_html(elems, bgcolor=YELLOW):
-    if len(elems)==0:
-        return " "
-    header = '<table BORDER="0" CELLPADDING="0" CELLBORDER="0" CELLSPACING="0">\n'
-
-    rows = []
-    for i,el in enumerate(elems):
-        if i==len(elems)-1:
-            value = '<td port="%d" BORDER="0" cellpadding="3" cellspacing="0" bgcolor="%s" align="center"><font color="#444443" point-size="9">%s</font></td>\n' % (i, bgcolor, repr(el))
-        else:
-            value = '<td port="%d" BORDER="1" cellpadding="2" cellspacing="0" sides="b" bgcolor="%s" align="center"><font color="#444443" point-size="9">%s</font></td>\n' % (i, bgcolor, repr(el))
-        row = '<tr>' + value + '</tr>\n'
-        rows.append(row)
-
-    tail = "</table>\n"
-    return header + ''.join(rows) + tail
-
+# def gr_vset_html(elems, bgcolor=YELLOW):
+#     if len(elems)==0:
+#         return " "
+#     header = '<table BORDER="0" CELLPADDING="0" CELLBORDER="0" CELLSPACING="0">\n'
+#
+#     rows = []
+#     for i,el in enumerate(elems):
+#         if i==len(elems)-1:
+#             value = '<td port="%d" BORDER="0" cellpadding="3" cellspacing="0" bgcolor="%s" align="center"><font color="#444443" point-size="9">%s</font></td>\n' % (i, bgcolor, repr(el))
+#         else:
+#             value = '<td port="%d" BORDER="1" cellpadding="2" cellspacing="0" sides="b" bgcolor="%s" align="center"><font color="#444443" point-size="9">%s</font></td>\n' % (i, bgcolor, repr(el))
+#         row = '<tr>' + value + '</tr>\n'
+#         rows.append(row)
+#
+#     tail = "</table>\n"
+#     return header + ''.join(rows) + tail
+#
 
 def gr_dict_node(nodename, title, items, highlight=None, bgcolor=YELLOW, separator="&rarr;", reprkey=True):
     html = gr_dict_html(title, items, highlight, bgcolor, separator, reprkey)
@@ -525,22 +529,31 @@ def gr_dict_html(title, items, highlight=None, bgcolor=YELLOW, separator="&rarr;
     return header + blankrow.join(rows) + tail
 
 
-def gr_vlol_node(nodename, elems, bgcolor=GREEN):
-    html = gr_vlol_html(elems, bgcolor)
+def gr_vlol_node(nodename, elems, bgcolor=GREEN, showindexes=True, showelems=True):
+    html = gr_vlol_html(elems, bgcolor, showindexes, showelems)
     return '%s [color="#444443", margin="0.02", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="%s", label=<%s>];\n' % (nodename,bgcolor,html)
 
 
-def gr_vlol_html(elems, bgcolor=GREEN):
+def gr_vlol_html(elems, bgcolor=GREEN, showindexes=True, showelems=False):
     if len(elems)==0:
         return " "
     header = '<table BORDER="0" CELLPADDING="0" CELLBORDER="0" CELLSPACING="0">\n'
 
     rows = []
     for i,el in enumerate(elems):
-        if i==len(elems)-1:
-            value = '<td port="%d" BORDER="0" cellpadding="3" cellspacing="0" bgcolor="%s" align="left"><font color="#444443" point-size="9">%s</font></td>\n' % (i, bgcolor, str(i))
+        if showindexes:
+            v = str(i)
         else:
-            value = '<td port="%d" BORDER="1" cellpadding="2" cellspacing="0" sides="b" bgcolor="%s" align="left"><font color="#444443" point-size="9">%s</font></td>\n' % (i, bgcolor, str(i))
+            v = ' '
+        if showelems:
+            if el is None:
+                v = ' '
+            else:
+                v = repr(el)
+        if i==len(elems)-1:
+            value = '<td port="%d" BORDER="0" cellpadding="3" cellspacing="0" bgcolor="%s" align="left"><font color="#444443" point-size="9">%s</font></td>\n' % (i, bgcolor, v)
+        else:
+            value = '<td port="%d" BORDER="1" cellpadding="2" cellspacing="0" sides="b" bgcolor="%s" align="left"><font color="#444443" point-size="9">%s</font></td>\n' % (i, bgcolor, v)
         row = '<tr>' + value + '</tr>\n'
         rows.append(row)
 

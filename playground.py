@@ -37,8 +37,9 @@ def g(x):
     g1.view()
 
 def f(x):
-    # a = {(1,2),(3,4)}
-    a = {'hi','mom','mom1','mom2','mom3','mom4','mom5','mom6','mom7','mom8','mom9','mom10','mom','mom'}
+    # a = {Node('parrt'),Node('mary')}
+    a = {'hi','mom'}
+    # a = {'hi','mom','mom1','mom2','mom3','mom4','mom5','mom6','mom7','mom8','mom9','mom10','mom','mom'}
     b = set()
     callsviz(varnames=['a','b']).view() #,'x',''y','BLUE','ctr','head','users','root']).view()
 
