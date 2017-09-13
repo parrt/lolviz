@@ -328,7 +328,7 @@ def obj_node(p, varnames=None):
                 elems.append(None)
         s += '// VERTICAL LIST or ITERATABLE\n'
         if isinstance(p,set):
-            s += gr_vlol_node(nodename, elems, title='Set', showindexes=False)
+            s += gr_vlol_node(nodename, elems, title='set', showindexes=False)
         else:
             s += gr_vlol_node(nodename, elems)
 
@@ -422,7 +422,7 @@ def gr_listtable_html(values, title=None, bgcolor=YELLOW, showindexes=True):
     header = '<table BORDER="0" CELLBORDER="0" CELLSPACING="0">\n'
 
     if title is not None:
-        titlerow = '<tr><td cellspacing="0" colspan="%d" cellpadding="0" bgcolor="%s" border="1" sides="b" align="center"><font color="#444443" FACE="Times-Italic" point-size="9">%s</font></td></tr>\n' % (len(values), bgcolor, title)
+        titlerow = '<tr><td cellspacing="0" colspan="%d" cellpadding="0" bgcolor="%s" border="1" sides="b" align="center"><font color="#444443" FACE="Times-Italic" point-size="11">%s</font></td></tr>\n' % (len(values), bgcolor, title)
     else:
         titlerow = ''
 
@@ -465,9 +465,9 @@ def gr_set_node(nodename, elems, bgcolor=YELLOW):
     if len(elems)>0:
         abbrev_values = abbrev_and_escape_values(elems) # compute just to see eventual size
         if len(''.join(abbrev_values))>prefs.max_horiz_array_len:
-            html = gr_vlol_html(elems, title='Set', bgcolor=bgcolor, showindexes=False, showelems=True)
+            html = gr_vlol_html(elems, title='set', bgcolor=bgcolor, showindexes=False, showelems=True)
         else:
-            html = gr_listtable_html(elems, title='Set', bgcolor=bgcolor, showindexes=False)
+            html = gr_listtable_html(elems, title='set', bgcolor=bgcolor, showindexes=False)
     else:
         shape = "none"
         html = '<font face="Times-Italic" color="#444443" point-size="9">empty list</font>'
@@ -537,7 +537,7 @@ def gr_vlol_html(elems, title=None, bgcolor=GREEN, showindexes=True, showelems=F
     rows = []
 
     if title is not None:
-        titlerow = '<tr><td cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="b" align="center"><font color="#444443" FACE="Times-Italic" point-size="9">%s</font></td></tr>\n' % (bgcolor, title)
+        titlerow = '<tr><td cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="b" align="center"><font color="#444443" FACE="Times-Italic" point-size="11">%s</font></td></tr>\n' % (bgcolor, title)
         rows.append(titlerow)
 
     for i,el in enumerate(elems):
