@@ -469,7 +469,7 @@ def gr_set_node(nodename, elems, bgcolor=YELLOW):
     if len(elems)>0:
         abbrev_values = abbrev_and_escape_values(elems) # compute just to see eventual size
         if len(''.join(abbrev_values))>prefs.max_horiz_array_len:
-            html = gr_vlol_html(elems, title='set', bgcolor=bgcolor, showindexes=False, showelems=True)
+            html = gr_vlist_html(elems, title='set', bgcolor=bgcolor, showindexes=False, showelems=True)
         else:
             html = gr_listtable_html(elems, title='set', bgcolor=bgcolor, showindexes=False)
     else:
@@ -570,6 +570,7 @@ def gr_vlist_html(elems, title=None, bgcolor=YELLOW, showindexes=True, showelems
     header = '<table BORDER="0" CELLPADDING="0" CELLBORDER="1" CELLSPACING="0">\n'
     tail = "</table>\n"
     blankrow = '<tr><td colspan="3" cellpadding="1" border="0" bgcolor="%s"></td></tr>' % (bgcolor)
+    sep = '<td cellspacing="0" cellpadding="0" border="0"></td>'
 
     rows = []
     if title is not None:
@@ -585,7 +586,6 @@ def gr_vlist_html(elems, title=None, bgcolor=YELLOW, showindexes=True, showelems
     if len(elems)>0:
         for i,e in items:
             index = '<td cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="r" align="right"><font face="Helvetica" color="#444443" point-size="11">%s </font></td>\n' % (bgcolor, i)
-            sep = '<td cellspacing="0" cellpadding="0" border="0"></td>'
 
             if isatom(e):
                 if len(str(e)) > prefs.max_str_len:
@@ -593,8 +593,11 @@ def gr_vlist_html(elems, title=None, bgcolor=YELLOW, showindexes=True, showelems
                 v = repr(e)
             else:
                 v = "   "
-            value = '<td port="%s" cellspacing="0" cellpadding="1" bgcolor="%s" border="0" align="left"><font color="#444443" point-size="11"> %s</font></td>\n' % (i, bgcolor, v)
-            row = '<tr>' + index + sep + value + '</tr>\n'
+            value = '<td port="%s" cellspacing="0" cellpadding="1" bgcolor="%s" border="0" align="center"><font color="#444443" point-size="11"> %s</font></td>\n' % (i, bgcolor, v)
+            if showindexes:
+                row = '<tr>' + index + sep + value + '</tr>\n'
+            else:
+                row = '<tr>' + value + '</tr>\n'
             rows.append(row)
     else:
         rows.append('<tr><td cellspacing="0" cellpadding="0" border="0"><font point-size="9"> ... </font></td></tr>\n')
