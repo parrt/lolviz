@@ -16,6 +16,7 @@ import inspect
 import types
 from collections import defaultdict
 import sys
+import random
 
 YELLOW = "#fefecd" # "#fbfbd0" # "#FBFEB0"
 BLUE = "#D9E6F5"
@@ -25,7 +26,14 @@ class Prefs: pass
 prefs = Prefs()
 prefs.max_str_len = 20         # how many chars before we abbreviate with ...?
 prefs.max_horiz_array_len = 40 # how many chars before it's too wide and we go vertical?
-prefs.max_list_elems = 15      # how many elements max to display in list (unused so far)
+prefs.max_list_elems = 10      # how many elements max to display in list (unused so far)
+
+class WrapAssoc:
+    def __init__(self,assoc):
+        self.assoc = assoc
+    def __repr__(self):
+        return elviz(self.assoc,showassoc=True)
+
 
 def strviz(astring):
     s = """
@@ -51,7 +59,15 @@ def listviz(elems, showassoc=True):
         nodesep=.05;
         node [penwidth="0.5", width=.1,height=.1];
     """
-    s += list_node(elems, showassoc)
+
+    newelems = []
+    for e in elems:
+        if showassoc and type(e) == tuple and len(e) == 2:
+            newelems.append(WrapAssoc(e))
+        else:
+            newelems.append(e)
+
+    s += gr_list_node('node%d'%id(elems), newelems)
 
     s += "}\n"
     return graphviz.Source(s)
@@ -379,31 +395,6 @@ def elviz(el, showassoc):
     return els
 
 
-def list_node(elems, showassoc):
-    html = listtable_html(elems, showassoc)
-    return '    node%d [shape="box", space="0.0", margin="0.01", fontcolor="#444443", fontname="Helvetica", label=<%s>];\n' % (id(elems),html)
-
-
-def listtable_html(values, showassoc):
-    header = '<table BORDER="0" CELLBORDER="0" CELLSPACING="0">\n'
-
-    index_html = '<td cellspacing="0" bgcolor="'+YELLOW+'" border="1" sides="br" valign="top"><font color="#444443" point-size="9">%d</font></td>\n'
-    value_html = '<td port="%d" bgcolor="'+YELLOW+'" border="1" sides="r" align="center"><font point-size="11">%s</font></td>\n'
-    # don't want right border to show on last.
-    last_index_html = '<td cellspacing="0" bgcolor="'+YELLOW+'" border="1" sides="b" valign="top"><font color="#444443" point-size="9">%d</font></td>\n'
-    last_value_html = '<td port="%d" bgcolor="'+YELLOW+'" border="0" align="center"><font point-size="11">%s</font></td>\n'
-
-    lastindex = len(values) - 1
-    toprow = [index_html % i for i in range(lastindex)]
-    bottomrow = [value_html % (i,elviz(values[i],showassoc)) for i in range(lastindex)]
-
-    toprow.append(last_index_html % lastindex)
-    bottomrow.append(last_value_html % (lastindex, elviz(values[lastindex], showassoc)))
-
-    tail = "</table>\n"
-    return header + '<tr>\n'+''.join(toprow)+'</tr>\n' + '<tr>\n'+''.join(bottomrow)+'</tr>' + tail
-
-
 def gr_list_node(nodename, elems, bgcolor=YELLOW):
     shape="box"
     if len(elems)>0:
@@ -420,17 +411,19 @@ def gr_list_node(nodename, elems, bgcolor=YELLOW):
 
 def gr_listtable_html(values, title=None, bgcolor=YELLOW, showindexes=True):
     header = '<table BORDER="0" CELLBORDER="0" CELLSPACING="0">\n'
+    tail = "</table>\n"
 
-    if title is not None:
-        titlerow = '<tr><td cellspacing="0" colspan="%d" cellpadding="0" bgcolor="%s" border="1" sides="b" align="center"><font color="#444443" FACE="Times-Italic" point-size="11">%s</font></td></tr>\n' % (len(values), bgcolor, title)
-    else:
-        titlerow = ''
-
-    index_html = '<td cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="br" valign="top"><font color="#444443" point-size="9">%d</font></td>\n'
-    value_html = '<td port="%d" bgcolor="%s" border="1" sides="r" align="center"><font point-size="11">%s</font></td>\n'
+    N = len(values)
+    index_html = '<td cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="br" valign="top"><font color="#444443" point-size="9">%s</font></td>\n'
+    value_html = '<td port="%s" bgcolor="%s" border="1" sides="r" align="center"><font point-size="11">%s</font></td>\n'
     # don't want right border to show on last.
     last_index_html = '<td cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="b" valign="top"><font color="#444443" point-size="9">%d</font></td>\n'
-    last_value_html = '<td port="%d" bgcolor="%s" border="0" align="center"><font point-size="11">%s</font></td>\n'
+    last_value_html = '<td port="%s" bgcolor="%s" border="0" align="center"><font point-size="11">%s</font></td>\n'
+
+    oversize = False
+    if N > prefs.max_list_elems:
+        values = values[0:prefs.max_list_elems-1] + [values[N - 1]]
+        oversize = True
 
     newvalues = []
     for value in values:
@@ -447,17 +440,23 @@ def gr_listtable_html(values, title=None, bgcolor=YELLOW, showindexes=True):
     toprow = [index_html % (bgcolor,i) for i in range(lastindex)]
     bottomrow = [value_html % (i,bgcolor,values[i]) for i in range(lastindex)]
 
-    if len(values)>=1:
-        toprow.append(last_index_html % (bgcolor,lastindex))
-        bottomrow.append(last_value_html % (lastindex, bgcolor,values[lastindex]))
+    if oversize:
+        toprow.append(index_html % (bgcolor,'...'))
+        bottomrow.append(value_html % ('',bgcolor,'...'))
 
-    tail = "</table>\n"
+    if len(values)>=1:
+        toprow.append(last_index_html % (bgcolor,N-1))
+        bottomrow.append(last_value_html % (N-1, bgcolor,values[lastindex]))
+
+    if title is not None:
+        titlerow = '<tr><td cellspacing="0" colspan="%d" cellpadding="0" bgcolor="%s" border="1" sides="b" align="center"><font color="#444443" FACE="Times-Italic" point-size="11">%s</font></td></tr>\n' % (N, bgcolor, title)
+    else:
+        titlerow = ''
+
     if showindexes:
         return header + titlerow + '<tr>\n'+''.join(toprow)+'</tr>\n' + '<tr>\n'+''.join(bottomrow)+'</tr>' + tail
     else:
-        leftcurly = '' #''<td cellspacing="0" cellpadding="0" bgcolor="'+bgcolor+'">{</td>'
-        rightcurly = '' #''<td cellspacing="0" cellpadding="0" bgcolor="'+bgcolor+'">}</td>'
-        return header + titlerow + '<tr>\n'+leftcurly+''.join(bottomrow)+rightcurly+'</tr>' + tail
+        return header + titlerow + '<tr>\n'+''.join(bottomrow)+'</tr>' + tail
 
 
 def gr_set_node(nodename, elems, bgcolor=YELLOW):
@@ -533,9 +532,9 @@ def gr_vlol_html(elems, title=None, bgcolor=GREEN, showindexes=True, showelems=F
     if len(elems)==0:
         return " "
     header = '<table BORDER="0" CELLPADDING="0" CELLBORDER="0" CELLSPACING="0">\n'
+    tail = "</table>\n"
 
     rows = []
-
     if title is not None:
         titlerow = '<tr><td cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="b" align="center"><font color="#444443" FACE="Times-Italic" point-size="11">%s</font></td></tr>\n' % (bgcolor, title)
         rows.append(titlerow)
@@ -557,7 +556,6 @@ def gr_vlol_html(elems, title=None, bgcolor=GREEN, showindexes=True, showelems=F
         row = '<tr>' + value + '</tr>\n'
         rows.append(row)
 
-    tail = "</table>\n"
     return header + ''.join(rows) + tail
 
 

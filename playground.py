@@ -39,9 +39,11 @@ def g(x):
 def f(x):
     a = {Node('parrt'),Node('mary')}
     b = {'hi','mom','heh', 'jude'}
-    # a = {'hi','mom','mom1','mom2','mom3','mom4','mom5','mom6','mom7','mom8','mom9','mom10','mom','mom'}
+    a = {'hi','mom','mom1','mom2','mom3','mom4','mom5','mom6','mom7','mom8','mom9','mom10','foo','bar','mom','mom'}
+    # a = [i for i in range(60)]
     c = ['a','b','c','d']
-    callsviz(varnames=['a','b','c','x','y','BLUE','ctr','head','users','root']).view()
+    listviz([('a',1),('b',2),'hi',9]).view()
+    # callsviz(varnames=['a','b','c','x','y','BLUE','ctr','head','users','root']).view()
 
 def hashcode(o): return ord(o) # assume keys are single-element strings
 
