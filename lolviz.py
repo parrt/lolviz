@@ -583,7 +583,7 @@ def gr_vlist_html(elems, title=None, bgcolor=YELLOW, showindexes=True, showelems
     else:
         items = [(i,elems[i]) for i in range(N)]
 
-    if len(elems)>0:
+    if len(items)>0:
         for i,e in items:
             index = '<td cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="r" align="right"><font face="Helvetica" color="#444443" point-size="11">%s </font></td>\n' % (bgcolor, i)
 
@@ -729,7 +729,10 @@ def isatomlist(elems):
     return True
 
 
-def isatom(p): return type(p) == int or type(p) == float or type(p) == str or type(p) == unicode or p.__class__ == Ellipsis
+def isatom(p): return type(p) == int or type(p) == float or \
+                      type(p) == str or type(p) == unicode or\
+                      p.__class__ == WrapAssoc or \
+                      p.__class__ == Ellipsis
 
 
 def isplainobj(p): return type(p) != types.FrameType and \
