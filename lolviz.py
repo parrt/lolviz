@@ -581,7 +581,7 @@ def gr_vlist_html(elems, title=None, bgcolor=YELLOW, showindexes=True, showelems
     if N > prefs.max_list_elems:
         items = [(i,elems[i]) for i in range(prefs.max_list_elems-1)] + [(Ellipsis(),Ellipsis()),(N-1,elems[N - 1])]
     else:
-        items = [(i,elems[i]) for i in range(prefs.max_list_elems)]
+        items = [(i,elems[i]) for i in range(N)]
 
     if len(elems)>0:
         for i,e in items:
