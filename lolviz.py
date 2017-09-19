@@ -35,6 +35,11 @@ class WrapAssoc:
         return elviz(self.assoc,showassoc=True)
 
 
+class Ellipsis:
+    def __repr__(self):
+        return '...'
+
+
 def strviz(astring):
     s = """
     digraph G {
@@ -559,9 +564,42 @@ def gr_vlol_html(elems, title=None, bgcolor=GREEN, showindexes=True, showelems=F
     return header + ''.join(rows) + tail
 
 
-def gr_vlist_html(elems, bgcolor=YELLOW):
-    items = [(i,i,value) for i,value in enumerate(elems)]
-    return gr_dict_html(title=None, items=items, separator=None, bgcolor=bgcolor)
+def gr_vlist_html(elems, title=None, bgcolor=YELLOW, showindexes=True, showelems=True):
+    if len(elems)==0:
+        return " "
+    header = '<table BORDER="0" CELLPADDING="0" CELLBORDER="1" CELLSPACING="0">\n'
+    tail = "</table>\n"
+    blankrow = '<tr><td colspan="3" cellpadding="1" border="0" bgcolor="%s"></td></tr>' % (bgcolor)
+
+    rows = []
+    if title is not None:
+        title = '<tr><td cellspacing="0" colspan="3" cellpadding="0" bgcolor="%s" border="1" sides="b" align="center"><font color="#444443" FACE="Times-Italic" point-size="11">%s</font></td></tr>\n' % (bgcolor, title)
+        rows.append(title)
+
+    N = len(elems)
+    if N > prefs.max_list_elems:
+        items = [(i,elems[i]) for i in range(prefs.max_list_elems-1)] + [(Ellipsis(),Ellipsis()),(N-1,elems[N - 1])]
+    else:
+        items = [(i,elems[i]) for i in range(prefs.max_list_elems)]
+
+    if len(elems)>0:
+        for i,e in items:
+            index = '<td cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="r" align="right"><font face="Helvetica" color="#444443" point-size="11">%s </font></td>\n' % (bgcolor, i)
+            sep = '<td cellspacing="0" cellpadding="0" border="0"></td>'
+
+            if isatom(e):
+                if len(str(e)) > prefs.max_str_len:
+                    e = abbrev_and_escape(str(e))
+                v = repr(e)
+            else:
+                v = "   "
+            value = '<td port="%s" cellspacing="0" cellpadding="1" bgcolor="%s" border="0" align="left"><font color="#444443" point-size="11"> %s</font></td>\n' % (i, bgcolor, v)
+            row = '<tr>' + index + sep + value + '</tr>\n'
+            rows.append(row)
+    else:
+        rows.append('<tr><td cellspacing="0" cellpadding="0" border="0"><font point-size="9"> ... </font></td></tr>\n')
+
+    return header + blankrow.join(rows) + tail
 
 
 def gr_vtree_node(title, nodename, items, bgcolor=YELLOW, separator=None, leftfield='left', rightfield='right'):
@@ -688,7 +726,7 @@ def isatomlist(elems):
     return True
 
 
-def isatom(p): return type(p) == int or type(p) == float or type(p) == str or type(p) == unicode
+def isatom(p): return type(p) == int or type(p) == float or type(p) == str or type(p) == unicode or p.__class__ == Ellipsis
 
 
 def isplainobj(p): return type(p) != types.FrameType and \
