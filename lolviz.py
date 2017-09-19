@@ -16,7 +16,7 @@ import inspect
 import types
 from collections import defaultdict
 import sys
-import random
+import sys
 
 YELLOW = "#fefecd" # "#fbfbd0" # "#FBFEB0"
 BLUE = "#D9E6F5"
@@ -729,10 +729,17 @@ def isatomlist(elems):
     return True
 
 
-def isatom(p): return type(p) == int or type(p) == float or \
-                      type(p) == str or type(p) == unicode or\
-                      p.__class__ == WrapAssoc or \
-                      p.__class__ == Ellipsis
+def isatom(p):
+    if (sys.version_info > (3, 0)):
+        return isatom_(p)
+    else:
+        return isatom_(p) or type(p) == unicode # only python 2 distinguishes between str/unicode
+
+
+def isatom_(p): return type(p) == int or type(p) == float or \
+                       type(p) == str or \
+                       p.__class__ == WrapAssoc or \
+                       p.__class__ == Ellipsis
 
 
 def isplainobj(p): return type(p) != types.FrameType and \
