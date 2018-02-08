@@ -323,6 +323,8 @@ def obj_node(p, varnames=None):
         s += gr_dict_node(nodename, None, items)
     elif isinstance(p,set) and len(p) == 0:  # special case "empty set"
         s += 'node%d [margin="0.03", shape=none label=<<font face="Times-Italic" color="#444443" point-size="9">empty set</font>>];\n' % id(p)
+    elif p is True or p is False:  # Boolean
+        s += 'node%d [margin="0.03", shape=none label=<<font face="Times-Italic" color="#444443" point-size="9">%s</font>>];\n' % (id(p), str(p))
     elif isinstance(p,list) and len(p)==0: # special case "empty list"
         s += 'node%d [margin="0.03", shape=none label=<<font face="Times-Italic" color="#444443" point-size="9">empty list</font>>];\n' % id(p)
     elif hasattr(p, "__iter__") and isatomlist(p) or type(p)==tuple:
