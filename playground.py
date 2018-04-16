@@ -119,7 +119,12 @@ users = [User('name'+str(i), i+100) for i in range(3)]
 # gg.view()
 # print gg.source
 # gg.view()
-f(989)
+#f(989)
+
+d = dict([(c,chr(c)) for c in range(ord('a'),ord('f'))])
+tuplelist = d.items()
+g = objviz(tuplelist)
+g.view()
 
 # data = ['hi','mom',{3,4},{"parrt":"user"}]
 # g = listviz(data)

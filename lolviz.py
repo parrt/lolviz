@@ -234,6 +234,8 @@ digraph G {
     node [penwidth="0.5", shape=box, width=.1, height=.1];
     
 """ % orientation
+    if hasattr(o, "__iter__"):
+        o = list(o)
     reachable = closure(o)
     s += obj_nodes(reachable)
     s += obj_edges(reachable)
