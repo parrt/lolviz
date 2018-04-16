@@ -33,7 +33,7 @@ class Tree:
 def g(x):
     s = "hi"
     g1 = callsviz(varnames=None)
-    print g1.source
+    print(g1.source)
     g1.view()
 
 def f(x):

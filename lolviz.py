@@ -16,7 +16,6 @@ import inspect
 import types
 from collections import defaultdict
 import sys
-import sys
 
 YELLOW = "#fefecd" # "#fbfbd0" # "#FBFEB0"
 BLUE = "#D9E6F5"
@@ -102,7 +101,6 @@ def treeviz(root, leftfield='left', rightfield='right'):
     for p in reachable:
         nodename = "node%d" % id(p)
         fields = []
-        kids = [(k,k,getattr(p,k)) for k in [leftfield, rightfield]]
         for k, v in p.__dict__.items():
             if k==leftfield or k==rightfield:
                 continue
@@ -904,7 +902,6 @@ def edges_to_same_type(p, varnames):
     homo_edges = []
     edges = node_edges(p, varnames)
     for e in edges:
-        fieldname = e[1]
         q = e[2]
         if type(p) == type(q):
             homo_edges.append(e)
