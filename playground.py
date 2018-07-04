@@ -34,7 +34,7 @@ def g(x):
     s = "hi"
     g1 = callsviz(varnames=None)
     print(g1.source)
-    g1.view()
+    #g1.view()
 
 def f(x):
     a = {Node('parrt'),Node('mary')}
@@ -43,7 +43,6 @@ def f(x):
     # a = [i for i in range(15)]
     d = dict([(c, chr(c)) for c in range(ord('a'), ord('f'))])
     c = ['a','b','c','d']
-    listviz(d.items()).view()
     # callsviz(varnames=['a','b','c','x','y','BLUE','ctr','head','users','root']).view()
 
 def hashcode(o): return ord(o) # assume keys are single-element strings
@@ -122,8 +121,7 @@ users = [User('name'+str(i), i+100) for i in range(3)]
 #f(989)
 
 d = dict([(c,chr(c)) for c in range(ord('a'),ord('f'))])
-tuplelist = d.items()
-g = objviz(tuplelist)
+g = objviz(d)
 g.view()
 
 # data = ['hi','mom',{3,4},{"parrt":"user"}]
@@ -176,3 +174,4 @@ g.view()
 # check_call(['dot', '-Tpdf', 'lolviz_subgraph.dot', '-o', 'lolviz_subgraph.pdf'])
 # check_call(['dot', '-Tgif', 'lolviz_subgraph.dot', '-o', 'lolviz_subgraph.gif'])
 # s += 'nodedfadsfasdfasdf [image="lolviz_subgraph.pdf"]'
+
