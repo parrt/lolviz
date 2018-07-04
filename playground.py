@@ -120,9 +120,12 @@ users = [User('name'+str(i), i+100) for i in range(3)]
 # gg.view()
 #f(989)
 
-d = dict([(c,chr(c)) for c in range(ord('a'),ord('f'))])
-g = objviz(d)
-g.view()
+# d = dict([(c,chr(c)) for c in range(ord('a'),ord('f'))])
+# g = objviz(d)
+# g.view()
+
+movies = {'Amadeus':1984, 'Witness':1985}
+objviz(movies).view()
 
 # data = ['hi','mom',{3,4},{"parrt":"user"}]
 # g = listviz(data)
