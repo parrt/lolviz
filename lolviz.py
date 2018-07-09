@@ -158,6 +158,10 @@ def lolviz(table, showassoc=True):
     return graphviz.Source(s)
 
 
+def ndarrayviz(data):
+    return None
+
+
 def callviz(frame=None, varnames=None):
     """
     Visualize one call stack frame. If frame is None, viz
