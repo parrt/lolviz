@@ -719,6 +719,9 @@ def string_html(s):
 
 
 def gr_1darray_html(data, bgcolor=YELLOW):
+    if 'numpy' not in sys.modules:
+        import numpy
+    np = sys.modules['numpy']
     if not isinstance(data,np.ndarray):
         return " "
     if data.ndim > 1:
@@ -762,6 +765,9 @@ def gr_1darray_html(data, bgcolor=YELLOW):
 
 
 def gr_2darray_html(data, bgcolor=YELLOW):
+    if 'numpy' not in sys.modules:
+        import numpy
+    np = sys.modules['numpy']
     if len(data)==0:
         return " "
     if not isinstance(data,np.ndarray):
@@ -818,7 +824,8 @@ def gr_ndarray_node(nodename, data, bgcolor=YELLOW):
     html = gr_2darray_html(data, bgcolor=bgcolor)
     return '%s [shape="%s", space="0.0", margin="0.01", fontcolor="#444443", fontname="Helvetica", label=<%s>];\n' % (nodename,shape,html)
 
-def myviz(data):
+
+def matrixviz(data):
     s = """
     digraph G {
         nodesep=.05;
