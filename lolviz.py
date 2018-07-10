@@ -239,9 +239,15 @@ digraph G {
     node [penwidth="0.5", shape=box, width=.1, height=.1];
     
 """ % orientation
+
+    if 'numpy' in sys.modules:
+        np = sys.modules['numpy']
+        if isinstance(o, np.ndarray):
+            return matrixviz(o)
     if hasattr(o, "__iter__"):
         o = list(o)
     reachable = closure(o)
+
     s += obj_nodes(reachable)
     s += obj_edges(reachable)
     s += "}\n"

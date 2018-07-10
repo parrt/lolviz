@@ -124,7 +124,7 @@ users = [User('name'+str(i), i+100) for i in range(3)]
 d = dict([(c,chr(c)) for c in range(ord('a'),ord('f'))])
 tuplelist = d.items()
 g = objviz(tuplelist)
-g.view()
+#g.view()
 
 # data = ['hi','mom',{3,4},{"parrt":"user"}]
 # g = listviz(data)
@@ -176,3 +176,14 @@ g.view()
 # check_call(['dot', '-Tpdf', 'lolviz_subgraph.dot', '-o', 'lolviz_subgraph.pdf'])
 # check_call(['dot', '-Tgif', 'lolviz_subgraph.dot', '-o', 'lolviz_subgraph.gif'])
 # s += 'nodedfadsfasdfasdf [image="lolviz_subgraph.pdf"]'
+
+import numpy as np
+
+B = np.ones((100,100))
+for i in range(100):
+    for j in range(100):
+        B[i,j] = i+j
+
+A = np.array([1,3,5])
+
+callviz(varnames=['A']).view()
