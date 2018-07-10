@@ -718,6 +718,119 @@ def string_html(s):
     return header + '<tr><td></td>\n'+''.join(toprow)+'<td></td></tr>\n' + '<tr><td>\'</td>\n'+''.join(bottomrow)+'<td>\'</td></tr>' + tail
 
 
+def gr_1darray_html(data, bgcolor=YELLOW):
+    if not isinstance(data,np.ndarray):
+        return " "
+    if data.ndim > 1:
+        return gr_1darray_html(data, bgcolor)
+    if data.ndim > 2:
+        return " "
+
+    ncols = len(data)
+    header = '<table BORDER="0" CELLPADDING="0" CELLBORDER="1" CELLSPACING="0">\n'
+    tail = "</table>\n"
+
+    # grab slice of max elements from matrix
+    coloversize = False
+    midpoint = prefs.max_list_elems//2
+    if ncols > prefs.max_list_elems:
+        colslice = list(np.arange(0,midpoint)) + list(np.arange(ncols-midpoint,ncols))
+        data = data[colslice]
+        ncols=len(colslice)
+        coloversize = True
+
+    cells = []
+    for j in range(ncols):
+        if coloversize and j==midpoint:
+            cells.append( '<td cellspacing="0" cellpadding="2" bgcolor="%s" border="0" align="center"><font color="#444443" point-size="10">...</font></td>\n' % bgcolor)
+        value = data[j]
+        if isinstance(value, float):
+            if str(value).endswith('.0'):
+                value = str(value)[:-1]
+            else:
+                value = round(value, prefs.float_precision)
+        if isinstance(value, float) and str(value).endswith('.0'):
+            value = str(value)[:-1]
+        if len(str(value)) > prefs.max_str_len:
+            value = abbrev_and_escape(str(value))
+        cell = '<td cellspacing="0" cellpadding="3" bgcolor="%s" border="0" align="center"><font color="#444443" point-size="10">%s</font></td>\n' % (bgcolor, value)
+        cells.append( cell )
+
+    row = '<tr>' + ''.join(cells) + '</tr>\n'
+
+    return header + row + tail
+
+
+def gr_2darray_html(data, bgcolor=YELLOW):
+    if len(data)==0:
+        return " "
+    if not isinstance(data,np.ndarray):
+        return " "
+    if data.ndim == 1:
+        return gr_1darray_html(data, bgcolor)
+    if data.ndim > 2:
+        return " "
+
+    nrows,ncols = data.shape
+    header = '<table BORDER="0" CELLPADDING="0" CELLBORDER="1" CELLSPACING="0">\n'
+    tail = "</table>\n"
+
+    # grab slice of max elements from matrix
+    coloversize = rowoversize = False
+    midpoint = prefs.max_list_elems//2
+    if nrows > prefs.max_list_elems:
+        rowslice = list(np.arange(0,midpoint)) + list(np.arange(nrows-midpoint,nrows))
+        data = data[rowslice]
+        nrows=len(rowslice)
+        rowoversize = True
+    if ncols > prefs.max_list_elems:
+        colslice = list(np.arange(0,midpoint)) + list(np.arange(ncols-midpoint,ncols))
+        data = data[:,colslice]
+        ncols=len(colslice)
+        coloversize = True
+
+    rows = []
+    for i in range(nrows):
+        if rowoversize and i==midpoint:
+            rows.append( '<tr><td bgcolor="%s" cellpadding="2" border="0" align="center"><font color="#444443" point-size="10">&#8942;</font></td><td bgcolor="%s" cellpadding="2" border="0" colspan="%d"></td></tr>\n' % (bgcolor,bgcolor,ncols))
+        cells = []
+        for j in range(ncols):
+            if coloversize and j==midpoint:
+                cells.append( '<td cellspacing="0" cellpadding="2" bgcolor="%s" border="0" align="center"><font color="#444443" point-size="10">...</font></td>\n' % bgcolor)
+            value = data[i,j]
+            if isinstance(value, float):
+                if str(value).endswith('.0'):
+                    value = str(value)[:-1]
+                else:
+                    value = round(value, prefs.float_precision)
+            if len(str(value)) > prefs.max_str_len:
+                value = abbrev_and_escape(str(value))
+            cell = '<td cellspacing="0" cellpadding="3" bgcolor="%s" border="0" align="center"><font color="#444443" point-size="10">%s</font></td>\n' % (bgcolor, value)
+            cells.append( cell )
+        row = '<tr>' + ''.join(cells) + '</tr>\n'
+        rows.append(row)
+
+    return header + ''.join(rows) + tail
+
+
+def gr_ndarray_node(nodename, data, bgcolor=YELLOW):
+    shape="box"
+    html = gr_2darray_html(data, bgcolor=bgcolor)
+    return '%s [shape="%s", space="0.0", margin="0.01", fontcolor="#444443", fontname="Helvetica", label=<%s>];\n' % (nodename,shape,html)
+
+def myviz(data):
+    s = """
+    digraph G {
+        nodesep=.05;
+        node [penwidth="0.5", width=.1,height=.1];
+    """
+
+    s += gr_ndarray_node('node%d'%id(data), data)
+
+    s += "}\n"
+    return graphviz.Source(s)
+
+
 def islol(elems):
     if type(elems)!=list:
         return False
