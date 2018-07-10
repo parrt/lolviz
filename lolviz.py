@@ -26,6 +26,7 @@ prefs = Prefs()
 prefs.max_str_len = 20         # how many chars before we abbreviate with ...?
 prefs.max_horiz_array_len = 40 # how many chars before it's too wide and we go vertical?
 prefs.max_list_elems = 10      # how many elements max to display in list (unused so far)
+prefs.float_precision = 5      # how many decimal places to show for floats
 
 class WrapAssoc:
     def __init__(self,assoc):
@@ -397,6 +398,8 @@ def elviz(el, showassoc):
         els = '{'+', '.join([elviz(e, showassoc) for e in el])+'}'
     elif type(el) == dict:
         els = '{' + ','.join([elviz(e, showassoc) for e in el.items()]) + '}'
+    elif isinstance(el,float):
+        els = str(round(el,prefs.float_precision))
     else:
         els = repr(el)
     els = els.replace('{', '&#123;')
