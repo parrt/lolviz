@@ -73,6 +73,7 @@ There are global preferences you can set that affect the display for long values
 * `prefs.max_str_len` (Default 20). How many chars in a string representation of a value before we abbreviate with `...`. E.g.,:<br><img src="images/short-string.png" width=160>
 * `prefs.max_horiz_array_len` (Default 70) Lists can quickly become too wide and distort the visualization. This preference lets you set how long the combined string representations of the list values can get before we use a vertical representation of the list. E.g.,:<br><img src="images/tall-list.png" width=130>
 * `prefs.max_list_elems`. Horizontal and vertical lists and sets show maximum of 10 (default) elements.
+* `prefs.float_precision`. How many decimal places to show for floats (default is 5).
 
 ## Implementation notes
 
