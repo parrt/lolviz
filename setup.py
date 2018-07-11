@@ -9,7 +9,7 @@ setup(
     author='Terence Parr',
     author_email='parrt@antlr.org',
     install_requires=['graphviz'], # needs numpy if you use ndarrayviz()
-    description='A simple Python data-structure visualization tool for lists of lists, lists, dictionaries',
+    description='A simple Python data-structure visualization tool for call stacks, lists of lists, lists, dictionaries, numpy arrays',
     keywords='visualization data structures',
     classifiers=['License :: OSI Approved :: BSD License',
                  'Intended Audience :: Developers']
