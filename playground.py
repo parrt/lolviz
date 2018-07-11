@@ -186,4 +186,6 @@ for i in range(100):
 
 A = np.array([1,3,5])
 
-callviz(varnames=['A']).view()
+g = callviz(varnames=['A'])
+print(g.source)
+g.view()

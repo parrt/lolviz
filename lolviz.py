@@ -212,7 +212,8 @@ def callsviz(callstack=None, varnames=None):
     # find all reachable objects from call stack
     reachable = []
     for f in callstack:
-        reachable.extend( closure(f, varnames) )
+        cl = closure(f, varnames)
+        reachable.extend(cl)
     reachable = uniq(reachable)
 
     s += obj_nodes(reachable)
@@ -240,9 +241,8 @@ digraph G {
     
 """ % orientation
 
-    if 'numpy' in sys.modules:
-        np = sys.modules['numpy']
-        if isinstance(o, np.ndarray):
+    if type(o).__module__ == 'numpy': # avoid requiring numpy package unless used
+        if type(o).__name__ == 'ndarray':
             return matrixviz(o)
     if hasattr(o, "__iter__"):
         o = list(o)
@@ -338,6 +338,8 @@ def obj_node(p, varnames=None):
         s += 'node%d [margin="0.03", shape=none label=<<font face="Times-Italic" color="#444443" point-size="9">%s</font>>];\n' % (id(p), str(p))
     elif isinstance(p,list) and len(p)==0: # special case "empty list"
         s += 'node%d [margin="0.03", shape=none label=<<font face="Times-Italic" color="#444443" point-size="9">empty list</font>>];\n' % id(p)
+    elif type(p).__module__ == 'numpy' and type(p).__name__ == 'ndarray':
+        s += gr_ndarray_node('node%d'%id(p), p)
     elif hasattr(p, "__iter__") and isatomlist(p) or type(p)==tuple:
         # print "DRAW LIST", p, '@ node' + nodename
         elems = []
@@ -378,7 +380,7 @@ def obj_node(p, varnames=None):
         s += gr_dict_node(nodename, p.__class__.__name__, items, separator=None,
                           reprkey=False)
     else:
-        s += 'node%d [margin="0.03", shape=none label=<<font face="Times-Italic" color="#444443" point-size="9">%s</font>>];\n' % (id(p),abbrev_and_escape("CANNOT HANDLE: type==%s '%s'" % (type(p),repr(p))))
+        s += 'node%d [margin="0.03", shape=none label=<<font face="Times-Italic" color="#444443" point-size="9">%s</font>>];\n' % (id(p),abbrev_and_escape("<%s:%s>" % (type(p).__name__,repr(p))))
 
     return s
 
@@ -914,6 +916,8 @@ def closure_(p, varnames, visited):
         if caller_scopename != '<module>': # stop at globals
             cl = closure_(p.f_back, varnames, visited)
             result.extend(cl)
+    elif type(p).__module__ == 'numpy' and type(p).__name__ == 'ndarray':
+        pass # ndarray added already above; don't chase its elements here
     elif type(p)==dict:
         for k,q in p.items():
             cl = closure_(q, varnames, visited)
@@ -952,6 +956,8 @@ def node_edges(p, varnames=None):
             if not isatom(v) and v is not None:
                 edges.append((p, str(i), v))
             i += 1
+    elif type(p).__module__ == 'numpy' and type(p).__name__ == 'ndarray':
+        pass # don't chase elements
     elif hasattr(p, "__iter__"):
         for i, el in enumerate(p):
             if not isatom(el) and el is not None:
