@@ -122,9 +122,8 @@ users = [User('name'+str(i), i+100) for i in range(3)]
 #f(989)
 
 d = dict([(c,chr(c)) for c in range(ord('a'),ord('f'))])
-tuplelist = d.items()
-g = objviz(tuplelist)
-#g.view()
+g = objviz(d)
+g.view()
 
 # data = ['hi','mom',{3,4},{"parrt":"user"}]
 # g = listviz(data)
@@ -177,15 +176,15 @@ g = objviz(tuplelist)
 # check_call(['dot', '-Tgif', 'lolviz_subgraph.dot', '-o', 'lolviz_subgraph.gif'])
 # s += 'nodedfadsfasdfasdf [image="lolviz_subgraph.pdf"]'
 
-import numpy as np
-
-B = np.ones((100,100))
-for i in range(100):
-    for j in range(100):
-        B[i,j] = i+j
-
-A = np.array([1,3,5])
-
-g = callviz(varnames=['A'])
-print(g.source)
-g.view()
+# import numpy as np
+#
+# B = np.ones((100,100))
+# for i in range(100):
+#     for j in range(100):
+#         B[i,j] = i+j
+#
+# A = np.array([1,3,5])
+#
+# g = callviz(varnames=['A'])
+# print(g.source)
+# g.view()

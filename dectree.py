@@ -170,8 +170,8 @@ data.columns =boston.feature_names
 
 clf = clf.fit(data, boston.target)
 
-st = dectreeviz(clf.tree_, data, boston.target)
-# st = dectreeviz(clf.tree_, data, boston.target, orientation="TD")
+# st = dectreeviz(clf.tree_, data, boston.target)
+st = dectreeviz(clf.tree_, data, boston.target, orientation="TD")
 
 print(st)
 graphviz.Source(st).view()
