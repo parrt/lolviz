@@ -244,7 +244,7 @@ digraph G {
     if type(o).__module__ == 'numpy': # avoid requiring numpy package unless used
         if type(o).__name__ == 'ndarray':
             return matrixviz(o)
-    if hasattr(o, "__iter__"):
+    if not isinstance(o, dict) and hasattr(o, "__iter__"):
         o = list(o)
     reachable = closure(o)
 
