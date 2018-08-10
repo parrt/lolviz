@@ -8,6 +8,7 @@ from sklearn import tree
 from sklearn.datasets import load_boston, load_iris
 from collections import defaultdict
 import string
+import re
 
 YELLOW = "#fefecd" # "#fbfbd0" # "#FBFEB0"
 
@@ -67,7 +68,7 @@ def tree_traverse(n_nodes, children_left, children_right):
 def dectreeviz(root, X, y, precision=1, orientation="LR"):
     def get_feature(i):
         name = X.columns[feature[i]]
-        node_name = name.translate(None, string.punctuation)+str(i)
+        node_name = ''.join(c for c in name if c not in string.punctuation)+str(i)
         return name, node_name
 
     def round(v):
