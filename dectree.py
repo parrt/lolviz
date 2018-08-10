@@ -3,6 +3,7 @@ from io import StringIO
 from IPython.display import Image
 import numpy as np
 import pandas as pd
+import math
 from sklearn import tree
 from sklearn.datasets import load_boston, load_iris
 from collections import defaultdict
@@ -81,13 +82,16 @@ def dectreeviz(root, X, y, precision=1, orientation="LR"):
 
     is_leaf, node_depth = tree_traverse(n_nodes, children_left, children_right)
 
+    ranksep = ".22"
+    if orientation=="TD":
+        ranksep = ".15"
     st = '\ndigraph G {\n ranksep=equally;\n \
                         splines=line;\n \
                         nodesep=0.1;\n \
-                        ranksep=0.1;\n \
+                        ranksep=%s;\n \
                         rankdir=%s;\n \
                         node [penwidth="0.5" shape=plain fixedsize=False];\n \
-                        edge [arrowsize=.4 penwidth="0.5"]\n' % orientation
+                        edge [arrowsize=.4 penwidth="0.5"]\n' % (ranksep,orientation)
 
     # Define decision nodes (non leaf nodes) as feature names
     for i in range(n_nodes):
@@ -111,15 +115,30 @@ def dectreeviz(root, X, y, precision=1, orientation="LR"):
             split = round(threshold[i])
             left_html = '<font face="Helvetica" color="#444443" point-size="8">&lt; %s</font>' % split
             right_html = '<font face="Helvetica" color="#444443" point-size="8">&ge; %s</font>' % split
-            # do right before left as it is the >= edge
-            st += '{name} -> {right} [label=<{label}>]\n' \
-                .format(label=right_html,
-                        name=node_name,
-                        right=right_node_name)
-            st += '{name} -> {left} [label=<{label}>]\n'\
+            if orientation=="TD":
+                ldistance = "1.3"
+                rdistance = "1.3"
+                langle = "-55"
+                rangle = "55"
+            else:
+                ldistance = "1.3" # not used in LR mode; just label not taillable.
+                rdistance = "1.3"
+                langle = "-90"
+                rangle = "90"
+            st += '{name} -> {left} [labelangle="{angle}" labeldistance="{ldistance}" {tail}label=< {label} >]\n'\
                       .format(label=left_html,
+                              angle=langle,
+                              ldistance=ldistance,
                               name=node_name,
+                              tail="",#""tail" if orientation=="TD" else "",
                               left=left_node_name)
+            st += '{name} -> {right} [labelangle="{angle}" labeldistance="{rdistance}" {tail}label=<{label}>]\n' \
+                .format(label=right_html,
+                        angle=rangle,
+                        rdistance=rdistance,
+                        name=node_name,
+                        tail="",# "tail" if orientation == "TD" else "",
+                        right=right_node_name)
 
     # Define leaf nodes (after edges so >= edges shown properly)
     for i in range(n_nodes):
@@ -128,10 +147,10 @@ def dectreeviz(root, X, y, precision=1, orientation="LR"):
             node_samples = clf.tree_.n_node_samples
             impurity = clf.tree_.impurity
             # html = '<font face="Helvetica" color="#444443" point-size="9">predict={pred}</font>'.format(pred=round(value[0]))
-            html = """<table BORDER="0" CELLPADDING="4" CELLBORDER="0">
-            <tr><td><font face="Helvetica" color="#444443" point-size="9">predict="""+round(value[0])+"""</font></td></tr>
+            html = """<table BORDER="0" CELLPADDING="1" CELLBORDER="0">
+            <tr><td><font face="Helvetica" color="#444443" point-size="9">"""+round(value[0])+"""</font></td></tr>
             </table>"""
-            st += 'leaf{i} [height=0  margin="0" fillcolor="{color}" style=filled shape=box label=<{label}>]\n'\
+            st += 'leaf{i} [height=0 width="0" margin="0" fillcolor="{color}" style=filled shape=box label=<{label}>]\n'\
                 .format(i=i, label=html, name=node_name, color=YELLOW)
 
 
@@ -151,6 +170,7 @@ data.columns =boston.feature_names
 clf = clf.fit(data, boston.target)
 
 st = dectreeviz(clf.tree_, data, boston.target)
+# st = dectreeviz(clf.tree_, data, boston.target, orientation="TD")
 
 print(st)
 graphviz.Source(st).view()
