@@ -33,6 +33,12 @@ First you need graphviz (more specifically the `dot` executable). On a mac it's 
 $ brew install graphviz
 ```
 
+After upgrading to OS X High Sierra, I had to do this:
+
+```bash
+$ brew reinstall graphviz --with-pango
+```
+
 Then just install the `lolviz` Python package:
 
 ```bash

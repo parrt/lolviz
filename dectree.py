@@ -65,7 +65,7 @@ def tree_traverse(n_nodes, children_left, children_right):
 #     return walk(root_node_id)
 
 
-def dectreeviz(root, X, y, precision=1, orientation="LR"):
+def dtreeviz(root, X, y, precision=1, orientation="LR"):
     def get_feature(i):
         name = X.columns[feature[i]]
         node_name = ''.join(c for c in name if c not in string.punctuation)+str(i)
@@ -126,14 +126,14 @@ def dectreeviz(root, X, y, precision=1, orientation="LR"):
                 rdistance = "1.3"
                 langle = "-90"
                 rangle = "90"
-            st += '{name} -> {left} [labelangle="{angle}" labeldistance="{ldistance}" {tail}label=< {label} >]\n'\
+            st += '{name} -> {left} [{tail}label=<{label}>]\n'\
                       .format(label=left_html,
                               angle=langle,
                               ldistance=ldistance,
                               name=node_name,
                               tail="",#""tail" if orientation=="TD" else "",
                               left=left_node_name)
-            st += '{name} -> {right} [labelangle="{angle}" labeldistance="{rdistance}" {tail}label=<{label}>]\n' \
+            st += '{name} -> {right} [{tail}label=<{label}>]\n' \
                 .format(label=right_html,
                         angle=rangle,
                         rdistance=rdistance,
@@ -171,7 +171,7 @@ data.columns =boston.feature_names
 clf = clf.fit(data, boston.target)
 
 # st = dectreeviz(clf.tree_, data, boston.target)
-st = dectreeviz(clf.tree_, data, boston.target, orientation="TD")
+st = dtreeviz(clf.tree_, data, boston.target, orientation="TD")
 
 print(st)
 graphviz.Source(st).view()
