@@ -65,14 +65,15 @@ def tree_traverse(n_nodes, children_left, children_right):
 #     return walk(root_node_id)
 
 
-def dtreeviz(root, X, y, precision=1, orientation="LR"):
+def dtreeviz(tree, X, y, precision=1, orientation="LR"):
     def get_feature(i):
         name = X.columns[feature[i]]
         node_name = ''.join(c for c in name if c not in string.punctuation)+str(i)
+        node_name = re.sub("["+string.punctuation+string.whitespace+"]", '_', node_name)
         return name, node_name
 
-    def round(v):
-        return format(v, '.' + str(precision) + 'f')
+    def round(v,ndigits=precision):
+        return format(v, '.' + str(ndigits) + 'f')
 
     def dec_node_box(name, node_name, split):
         html = """<table BORDER="0" CELLPADDING="0" CELLBORDER="0" CELLSPACING="0">
@@ -104,17 +105,17 @@ def dtreeviz(root, X, y, precision=1, orientation="LR"):
             return margin_range[0]
 
     # parsing the tree structure
-    n_nodes = root.node_count  # total nodes in the tree
-    children_left = root.children_left  # left children node index
-    children_right = root.children_right  # right children node index
-    feature = root.feature  # feature index at splits (-2 means leaf)
-    threshold = root.threshold  # split threshold values at given feature
+    n_nodes = tree.node_count  # total nodes in the tree
+    children_left = tree.children_left  # left children node index
+    children_right = tree.children_right  # right children node index
+    feature = tree.feature  # feature index at splits (-2 means leaf)
+    threshold = tree.threshold  # split threshold values at given feature
 
     is_leaf, node_depth = tree_traverse(n_nodes, children_left, children_right)
 
     ranksep = ".22"
     if orientation=="TD":
-        ranksep = ".55"
+        ranksep = ".35"
     st = '\ndigraph G {splines=line;\n \
                         nodesep=0.1;\n \
                         ranksep=%s;\n \
@@ -171,27 +172,41 @@ def dtreeviz(root, X, y, precision=1, orientation="LR"):
                         right=right_node_name)
 
     # find range of leaf sample count
-    leaf_sample_counts = [clf.tree_.n_node_samples[i] for i in range(n_nodes) if is_leaf[i]]
+    leaf_sample_counts = [tree.n_node_samples[i] for i in range(n_nodes) if is_leaf[i]]
     min_samples = min(leaf_sample_counts)
     max_samples = max(leaf_sample_counts)
     sample_count_range = max_samples - min_samples
     print(leaf_sample_counts)
     print("range is ", sample_count_range)
 
+    # is_classifier = hasattr(tree, 'n_classes')
+    is_classifier = tree.n_classes > 1
+
     # Define leaf nodes (after edges so >= edges shown properly)
     for i in range(n_nodes):
         if is_leaf[i]:
-            value = root.value[i][0]
-            node_samples = root.n_node_samples[i]
-            impurity = root.impurity
+            node_samples = tree.n_node_samples[i]
+            impurity = tree.impurity
+
             # html = '<font face="Helvetica" color="#444443" point-size="9">predict={pred}</font>'.format(pred=round(value[0]))
-            html = """<table BORDER="0" CELLPADDING="1" CELLBORDER="0">
-            <tr><td><font face="Helvetica" color="#444443" point-size="11">"""+round(value[0])+"""</font></td></tr>
-            </table>"""
-            html = """<font face="Helvetica" color="#444443" point-size="11">"""+round(value[0])+"""</font>"""
-            margin = prop_size(node_samples)
-            st += 'leaf{i} [height=0 width="0.4" margin="{margin}" style=filled fillcolor="{color}" shape=circle label=<{label}>]\n'\
-                .format(i=i, label=html, name=node_name, color=YELLOW, margin=margin)
+            # html = """<table BORDER="0" CELLPADDING="1" CELLBORDER="0">
+            # <tr><td><font face="Helvetica" color="#444443" point-size="11">"""+round(value[0])+"""</font></td></tr>
+            # </table>"""
+            if is_classifier:
+                counts = np.array(tree.value[i][0])
+                predicted = np.argmax(counts)
+                ratios = counts / node_samples # convert counts to ratios totalling 1.0
+                ratios = [round(r,3) for r in ratios]
+                html = """<font face="Helvetica" color="#444443" point-size="11">""" + round(counts[0]) + """</font>"""
+                margin = prop_size(node_samples)
+                st += 'leaf{i} [height=0 width="0.4" margin="{margin}" style=wedged fillcolor="{colors}" shape=circle label=<{label}>]\n' \
+                    .format(i=i, label=html, name=node_name, colors="red;0.3:green;0.6:orange", margin=margin)
+            else:
+                value = tree.value[i][0]
+                html = """<font face="Helvetica" color="#444443" point-size="11">"""+round(value[0])+"""</font>"""
+                margin = prop_size(node_samples)
+                st += 'leaf{i} [height=0 width="0.4" margin="{margin}" style=filled fillcolor="{color}" shape=circle label=<{label}>]\n'\
+                    .format(i=i, label=html, name=node_name, color=YELLOW, margin=margin)
 
 
     # end of string
@@ -199,21 +214,46 @@ def dtreeviz(root, X, y, precision=1, orientation="LR"):
 
     return st
 
-clf = tree.DecisionTreeRegressor(max_depth=4, random_state=666)
-boston = load_boston()
+def boston():
+    regr = tree.DecisionTreeRegressor(max_depth=5, random_state=666)
+    boston = load_boston()
 
-print(boston.data.shape, boston.target.shape)
+    print(boston.data.shape, boston.target.shape)
 
-data = pd.DataFrame(boston.data)
-data.columns =boston.feature_names
+    data = pd.DataFrame(boston.data)
+    data.columns =boston.feature_names
 
-clf = clf.fit(data, boston.target)
+    regr = regr.fit(data, boston.target)
 
-# st = dectreeviz(clf.tree_, data, boston.target)
-st = dtreeviz(clf.tree_, data, boston.target, orientation="TD")
+    # st = dectreeviz(regr.tree_, data, boston.target)
+    st = dtreeviz(regr.tree_, data, boston.target, orientation="TD")
 
-with open("/tmp/t3.dot", "w") as f:
-    f.write(st)
+    with open("/tmp/t3.dot", "w") as f:
+        f.write(st)
 
+    return st
+
+def iris():
+    clf = tree.DecisionTreeClassifier(max_depth=3, random_state=666)
+    iris = load_iris()
+
+    print(iris.data.shape, iris.target.shape)
+
+    data = pd.DataFrame(iris.data)
+    data.columns = iris.feature_names
+
+    clf = clf.fit(data, iris.target)
+
+    # st = dectreeviz(clf.tree_, data, boston.target)
+    st = dtreeviz(clf.tree_, data, iris.target, orientation="TD")
+
+    with open("/tmp/t3.dot", "w") as f:
+        f.write(st)
+
+    print(clf.tree_.value)
+    return st
+
+st = iris()
+# st = boston()
 print(st)
 graphviz.Source(st).view()
