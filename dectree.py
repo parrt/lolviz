@@ -12,6 +12,14 @@ import re
 
 YELLOW = "#fefecd" # "#fbfbd0" # "#FBFEB0"
 
+color_blind_friendly_colors = {
+    'crimson': '#a50026', 'red': '#d73027', 'redorange': '#f46d43',
+    'orange': '#fdae61', 'yellow': '#fee090', 'sky': '#e0f3f8',
+    'babyblue': '#abd9e9', 'lightblue': '#74add1', 'blue': '#4575b4',
+    'purple': '#313695'
+}
+
+
 def tree_traverse(n_nodes, children_left, children_right):
     """
     Derives code from http://scikit-learn.org/stable/auto_examples/tree/plot_unveil_tree_structure.html
@@ -181,6 +189,8 @@ def dtreeviz(tree, X, y, precision=1, orientation="LR"):
 
     # is_classifier = hasattr(tree, 'n_classes')
     is_classifier = tree.n_classes > 1
+    color_values = list(reversed(list(color_blind_friendly_colors.values())))
+    color_values = color_values[0:tree.n_classes[0]]
 
     # Define leaf nodes (after edges so >= edges shown properly)
     for i in range(n_nodes):
@@ -197,10 +207,11 @@ def dtreeviz(tree, X, y, precision=1, orientation="LR"):
                 predicted = np.argmax(counts)
                 ratios = counts / node_samples # convert counts to ratios totalling 1.0
                 ratios = [round(r,3) for r in ratios]
+                color_spec = ["{c};{r}".format(c=color_values[i],r=r) for i,r in enumerate(ratios)]
                 html = """<font face="Helvetica" color="#444443" point-size="11">""" + round(counts[0]) + """</font>"""
                 margin = prop_size(node_samples)
                 st += 'leaf{i} [height=0 width="0.4" margin="{margin}" style=wedged fillcolor="{colors}" shape=circle label=<{label}>]\n' \
-                    .format(i=i, label=html, name=node_name, colors="red;0.3:green;0.6:orange", margin=margin)
+                    .format(i=i, label=html, name=node_name, colors=':'.join(color_spec), margin=margin)
             else:
                 value = tree.value[i][0]
                 html = """<font face="Helvetica" color="#444443" point-size="11">"""+round(value[0])+"""</font>"""
