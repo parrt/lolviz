@@ -91,8 +91,17 @@ def dtreeviz(root, X, y, precision=1, orientation="LR"):
         return '{node_name} [shape=box label=<{label}>]\n'.format(label=html, node_name=node_name)
 
     def dec_node(name, node_name, split):
-        html = """<font face="Helvetica" color="#444443" point-size="12">{name}@{split}</font>""".format(name=name, split=split)
+        html = """<font face="Helvetica" color="#444443" point-size="12">{name}<br/>@{split}</font>""".format(name=name, split=split)
         return '{node_name} [shape=none label=<{label}>]\n'.format(label=html, node_name=node_name)
+
+    def prop_size(n):
+        # map to 0.03 to .35
+        margin_range = (0.03, 0.35)
+        if sample_count_range>0:
+            zero_to_one = (n - min_samples) / sample_count_range
+            return zero_to_one * (margin_range[1] - margin_range[0]) + margin_range[0]
+        else:
+            return margin_range[0]
 
     # parsing the tree structure
     n_nodes = root.node_count  # total nodes in the tree
@@ -105,7 +114,7 @@ def dtreeviz(root, X, y, precision=1, orientation="LR"):
 
     ranksep = ".22"
     if orientation=="TD":
-        ranksep = ".35"
+        ranksep = ".55"
     st = '\ndigraph G {splines=line;\n \
                         nodesep=0.1;\n \
                         ranksep=%s;\n \
@@ -145,34 +154,44 @@ def dtreeviz(root, X, y, precision=1, orientation="LR"):
                 rangle = "90"
             blankedge = 'label=<<font face="Helvetica" color="#444443" point-size="1">&nbsp;</font>>'
             st += '{name} -> {left} [{blankedge} labelangle="{angle}" labeldistance="{ldistance}" {tail}label=<{label}>]\n'\
-                      .format(label=left_html,
+                      .format(label="",#left_html,
                               angle=langle,
                               ldistance=ldistance,
                               name=node_name,
-                              blankedge = blankedge,
+                              blankedge = "",#blankedge,
                               tail="tail",#""tail" if orientation=="TD" else "",
                               left=left_node_name)
             st += '{name} -> {right} [{blankedge} labelangle="{angle}" labeldistance="{rdistance}" {tail}label=<{label}>]\n' \
-                .format(label=right_html,
+                .format(label="",#right_html,
                         angle=rangle,
                         rdistance=rdistance,
                         name=node_name,
-                        blankedge=blankedge,
+                        blankedge="",#blankedge,
                         tail="tail",# "tail" if orientation == "TD" else "",
                         right=right_node_name)
+
+    # find range of leaf sample count
+    leaf_sample_counts = [clf.tree_.n_node_samples[i] for i in range(n_nodes) if is_leaf[i]]
+    min_samples = min(leaf_sample_counts)
+    max_samples = max(leaf_sample_counts)
+    sample_count_range = max_samples - min_samples
+    print(leaf_sample_counts)
+    print("range is ", sample_count_range)
 
     # Define leaf nodes (after edges so >= edges shown properly)
     for i in range(n_nodes):
         if is_leaf[i]:
-            value = clf.tree_.value[i][0]
-            node_samples = clf.tree_.n_node_samples
-            impurity = clf.tree_.impurity
+            value = root.value[i][0]
+            node_samples = root.n_node_samples[i]
+            impurity = root.impurity
             # html = '<font face="Helvetica" color="#444443" point-size="9">predict={pred}</font>'.format(pred=round(value[0]))
             html = """<table BORDER="0" CELLPADDING="1" CELLBORDER="0">
-            <tr><td><font face="Helvetica" color="#444443" point-size="9">"""+round(value[0])+"""</font></td></tr>
+            <tr><td><font face="Helvetica" color="#444443" point-size="11">"""+round(value[0])+"""</font></td></tr>
             </table>"""
-            st += 'leaf{i} [height=0 width="0" margin="0" fillcolor="{color}" style=filled shape=box label=<{label}>]\n'\
-                .format(i=i, label=html, name=node_name, color=YELLOW)
+            html = """<font face="Helvetica" color="#444443" point-size="11">"""+round(value[0])+"""</font>"""
+            margin = prop_size(node_samples)
+            st += 'leaf{i} [height=0 width="0.4" margin="{margin}" style=filled fillcolor="{color}" shape=circle label=<{label}>]\n'\
+                .format(i=i, label=html, name=node_name, color=YELLOW, margin=margin)
 
 
     # end of string
@@ -180,7 +199,7 @@ def dtreeviz(root, X, y, precision=1, orientation="LR"):
 
     return st
 
-clf = tree.DecisionTreeRegressor(max_depth=3, random_state=666)
+clf = tree.DecisionTreeRegressor(max_depth=4, random_state=666)
 boston = load_boston()
 
 print(boston.data.shape, boston.target.shape)
