@@ -13,11 +13,24 @@ import re
 YELLOW = "#fefecd" # "#fbfbd0" # "#FBFEB0"
 
 color_blind_friendly_colors = {
-    'crimson': '#a50026', 'red': '#d73027', 'redorange': '#f46d43',
+    'redorange': '#f46d43',
     'orange': '#fdae61', 'yellow': '#fee090', 'sky': '#e0f3f8',
-    'babyblue': '#abd9e9', 'lightblue': '#74add1', 'blue': '#4575b4',
-    'purple': '#313695'
+    'babyblue': '#abd9e9', 'lightblue': '#74add1', 'blue': '#4575b4'
 }
+
+color_blind_friendly_colors = [
+    None, # 0 classes
+    None, # 1 class
+    ['#edf8b1','#7fcdbb'], # 2 classes
+    ['#edf8b1','#7fcdbb','#2c7fb8'], # 3 classes
+    ['#ffffcc','#a1dab4','#41b6c4','#225ea8'], # 4
+    ['#ffffcc','#a1dab4','#41b6c4','#2c7fb8','#253494'], # 5
+    ['#ffffcc','#c7e9b4','#7fcdbb','#41b6c4','#2c7fb8','#253494'], # 6
+    ['#ffffcc','#c7e9b4','#7fcdbb','#41b6c4','#1d91c0','#225ea8','#0c2c84'], # 7
+    ['#ffffd9','#edf8b1','#c7e9b4','#7fcdbb','#41b6c4','#1d91c0','#225ea8','#0c2c84'], # 8
+    ['#fff7fb','#ece7f2','#d0d1e6','#a6bddb','#74a9cf','#3690c0','#0570b0','#045a8d','#023858'], # 9
+    ['#e0f3f8','#ffffbf','#313695','#d73027','#f46d43','#fee090','#4575b4','#fdae61','#abd9e9','#74add1'] # 10
+]
 
 
 def tree_traverse(n_nodes, children_left, children_right):
@@ -73,7 +86,7 @@ def tree_traverse(n_nodes, children_left, children_right):
 #     return walk(root_node_id)
 
 
-def dtreeviz(tree, X, y, precision=1, orientation="LR"):
+def dtreeviz(tree, X, y, precision=1, classnames=None, orientation="LR"):
     def get_feature(i):
         name = X.columns[feature[i]]
         node_name = ''.join(c for c in name if c not in string.punctuation)+str(i)
@@ -189,8 +202,9 @@ def dtreeviz(tree, X, y, precision=1, orientation="LR"):
 
     # is_classifier = hasattr(tree, 'n_classes')
     is_classifier = tree.n_classes > 1
-    color_values = list(reversed(list(color_blind_friendly_colors.values())))
-    color_values = color_values[0:tree.n_classes[0]]
+    color_values = list(reversed(color_blind_friendly_colors))
+    color_values = color_blind_friendly_colors[tree.n_classes[0]]
+    # color_values = [c+"EF" for c in color_values] # add alpha
 
     # Define leaf nodes (after edges so >= edges shown properly)
     for i in range(n_nodes):
@@ -204,11 +218,14 @@ def dtreeviz(tree, X, y, precision=1, orientation="LR"):
             # </table>"""
             if is_classifier:
                 counts = np.array(tree.value[i][0])
-                predicted = np.argmax(counts)
+                predicted_class = np.argmax(counts)
+                predicted = predicted_class
+                if classnames:
+                    predicted = classnames[predicted_class]
                 ratios = counts / node_samples # convert counts to ratios totalling 1.0
                 ratios = [round(r,3) for r in ratios]
                 color_spec = ["{c};{r}".format(c=color_values[i],r=r) for i,r in enumerate(ratios)]
-                html = """<font face="Helvetica" color="#444443" point-size="11">""" + round(counts[0]) + """</font>"""
+                html = """<font face="Helvetica" color="black" point-size="12">{predicted}</font>""".format(predicted=predicted)
                 margin = prop_size(node_samples)
                 st += 'leaf{i} [height=0 width="0.4" margin="{margin}" style=wedged fillcolor="{colors}" shape=circle label=<{label}>]\n' \
                     .format(i=i, label=html, name=node_name, colors=':'.join(color_spec), margin=margin)
@@ -245,7 +262,7 @@ def boston():
     return st
 
 def iris():
-    clf = tree.DecisionTreeClassifier(max_depth=3, random_state=666)
+    clf = tree.DecisionTreeClassifier(max_depth=4, random_state=666)
     iris = load_iris()
 
     print(iris.data.shape, iris.target.shape)
@@ -256,7 +273,7 @@ def iris():
     clf = clf.fit(data, iris.target)
 
     # st = dectreeviz(clf.tree_, data, boston.target)
-    st = dtreeviz(clf.tree_, data, iris.target, orientation="TD")
+    st = dtreeviz(clf.tree_, data, iris.target, orientation="TD", classnames=["Iris - setosa", "Iris - versicolor", "Iris - virginica"])
 
     with open("/tmp/t3.dot", "w") as f:
         f.write(st)
