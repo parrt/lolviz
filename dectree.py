@@ -74,6 +74,26 @@ def dtreeviz(root, X, y, precision=1, orientation="LR"):
     def round(v):
         return format(v, '.' + str(precision) + 'f')
 
+    def dec_node_box(name, node_name, split):
+        html = """<table BORDER="0" CELLPADDING="0" CELLBORDER="0" CELLSPACING="0">
+        <tr>
+          <td colspan="3" align="center" cellspacing="0" cellpadding="0" bgcolor="#fefecd" border="1" sides="b"><font face="Helvetica" color="#444443" point-size="12">{name}</font></td>
+        </tr>
+        <tr>
+          <td colspan="3" cellpadding="1" border="0" bgcolor="#fefecd"></td>
+        </tr>
+        <tr>
+          <td cellspacing="0" cellpadding="0" bgcolor="#fefecd" border="1" sides="r" align="right"><font face="Helvetica" color="#444443" point-size="11">split</font></td>
+          <td cellspacing="0" cellpadding="0" border="0"></td>
+          <td cellspacing="0" cellpadding="0" bgcolor="#fefecd" align="left"><font face="Helvetica" color="#444443" point-size="11">{split}</font></td>
+        </tr>
+        </table>""".format(name=name, split=split)
+        return '{node_name} [shape=box label=<{label}>]\n'.format(label=html, node_name=node_name)
+
+    def dec_node(name, node_name, split):
+        html = """<font face="Helvetica" color="#444443" point-size="12">{name}@{split}</font>""".format(name=name, split=split)
+        return '{node_name} [shape=none label=<{label}>]\n'.format(label=html, node_name=node_name)
+
     # parsing the tree structure
     n_nodes = root.node_count  # total nodes in the tree
     children_left = root.children_left  # left children node index
@@ -85,23 +105,20 @@ def dtreeviz(root, X, y, precision=1, orientation="LR"):
 
     ranksep = ".22"
     if orientation=="TD":
-        ranksep = ".15"
-    st = '\ndigraph G {\n ranksep=equally;\n \
-                        splines=line;\n \
+        ranksep = ".35"
+    st = '\ndigraph G {splines=line;\n \
                         nodesep=0.1;\n \
                         ranksep=%s;\n \
                         rankdir=%s;\n \
-                        node [penwidth="0.5" shape=plain fixedsize=False];\n \
+                        node [margin="0.03" penwidth="0.5" width=.1, height=.1];\n \
                         edge [arrowsize=.4 penwidth="0.5"]\n' % (ranksep,orientation)
 
     # Define decision nodes (non leaf nodes) as feature names
     for i in range(n_nodes):
         if not is_leaf[i]:  # non leaf nodes
             name, node_name = get_feature(i)
-            html = """<table BORDER="0" CELLPADDING="2" CELLBORDER="0" CELLSPACING="0">
-            <tr><td><font face="Helvetica" color="#444443" point-size="9">"""+name+"""</font></td></tr>
-            </table>"""
-            st += '{name} [shape=plain label=<<b>{label}</b>>]\n'.format(label=html, name=node_name)
+            # st += dec_node_box(name, node_name, split=round(threshold[i]))
+            st += dec_node(name, node_name, split=round(threshold[i]))
 
     # non leaf edges with > and <=
     for i in range(n_nodes):
@@ -114,31 +131,34 @@ def dtreeviz(root, X, y, precision=1, orientation="LR"):
             if is_leaf[children_right[i]]:
                 right = right_node_name ='leaf%d' % children_right[i]
             split = round(threshold[i])
-            left_html = '<font face="Helvetica" color="#444443" point-size="8">&lt; %s</font>' % split
-            right_html = '<font face="Helvetica" color="#444443" point-size="8">&ge; %s</font>' % split
+            left_html = '<font face="Helvetica" color="#444443" point-size="11">&lt;</font>'
+            right_html = '<font face="Helvetica" color="#444443" point-size="11">&ge;</font>'
             if orientation=="TD":
-                ldistance = "1.3"
-                rdistance = "1.3"
-                langle = "-55"
-                rangle = "55"
+                ldistance = ".9"
+                rdistance = ".9"
+                langle = "-28"
+                rangle = "28"
             else:
                 ldistance = "1.3" # not used in LR mode; just label not taillable.
                 rdistance = "1.3"
                 langle = "-90"
                 rangle = "90"
-            st += '{name} -> {left} [{tail}label=<{label}>]\n'\
+            blankedge = 'label=<<font face="Helvetica" color="#444443" point-size="1">&nbsp;</font>>'
+            st += '{name} -> {left} [{blankedge} labelangle="{angle}" labeldistance="{ldistance}" {tail}label=<{label}>]\n'\
                       .format(label=left_html,
                               angle=langle,
                               ldistance=ldistance,
                               name=node_name,
-                              tail="",#""tail" if orientation=="TD" else "",
+                              blankedge = blankedge,
+                              tail="tail",#""tail" if orientation=="TD" else "",
                               left=left_node_name)
-            st += '{name} -> {right} [{tail}label=<{label}>]\n' \
+            st += '{name} -> {right} [{blankedge} labelangle="{angle}" labeldistance="{rdistance}" {tail}label=<{label}>]\n' \
                 .format(label=right_html,
                         angle=rangle,
                         rdistance=rdistance,
                         name=node_name,
-                        tail="",# "tail" if orientation == "TD" else "",
+                        blankedge=blankedge,
+                        tail="tail",# "tail" if orientation == "TD" else "",
                         right=right_node_name)
 
     # Define leaf nodes (after edges so >= edges shown properly)
@@ -172,6 +192,9 @@ clf = clf.fit(data, boston.target)
 
 # st = dectreeviz(clf.tree_, data, boston.target)
 st = dtreeviz(clf.tree_, data, boston.target, orientation="TD")
+
+with open("/tmp/t3.dot", "w") as f:
+    f.write(st)
 
 print(st)
 graphviz.Source(st).view()

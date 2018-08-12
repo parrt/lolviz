@@ -25,10 +25,15 @@ def sparkline(data, filename, fill=False, figsize=(4, 0.25), **kwags):
         ax.fill_between(range(len(data)), data, len(data)*[min(data)], alpha=0.1)
 
     plt.savefig(filename, transparent=True, bbox_inches='tight', dpi = 300)
+    plt.show()
 
 
 if __name__ == "__main__":
-    values = [7,10,12,18,2,8,10,6,7,12],
 
-    tmp = tempfile.gettempdir()
-    sparkline(values, "/tmp/foo.png")
+    values = [7,10,12,18,2,8,10,6,7,12],
+    fig = plt.figure()
+    plt.plot(values, linewidth=.5)
+    plt.show()
+
+    # tmp = tempfile.gettempdir()
+    # sparkline(values, "/tmp/foo.png")

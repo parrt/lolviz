@@ -84,7 +84,12 @@ There are global preferences you can set that affect the display for long values
 ## Implementation notes
 
 Mostly notes for parrt to remember things.
+
 ### Graphviz
+
+* crap. can't use .pdf or .svg images in nodes or in html labels
+
+* high sierra os x breaks lots of graphviz stuff like the app
 
 * Ugh. `shape=record` means html-labels can't use ports. warning!
 

@@ -106,6 +106,9 @@ head = Node('parrt', head)
 head = Node('foo', head)
 
 h = Node('blort', Node(head))
+g = objviz(root)
+print(g.source)
+g.view()
 
 # objviz(root).view()
 # lolviz(bucket).view()
@@ -123,7 +126,6 @@ users = [User('name'+str(i), i+100) for i in range(3)]
 
 d = dict([(c,chr(c)) for c in range(ord('a'),ord('f'))])
 g = objviz(d)
-g.view()
 
 # data = ['hi','mom',{3,4},{"parrt":"user"}]
 # g = listviz(data)
