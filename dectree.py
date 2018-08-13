@@ -34,8 +34,8 @@ color_blind_friendly_colors = [
     [YELLOW,'#e0f3f8','#313695','#fee090','#4575b4','#fdae61','#abd9e9','#74add1','#d73027','#f46d43'] # 10
 ]
 
-for x in color_blind_friendly_colors[2:]:
-    print(x)
+# for x in color_blind_friendly_colors[2:]:
+#     print(x)
 
 max_class_colors = len(color_blind_friendly_colors)-1
 
@@ -73,6 +73,23 @@ def tree_traverse(n_nodes, children_left, children_right):
             is_leaf[node_id] = True
 
     return is_leaf, node_depth
+
+
+# def shadow_decision_tree(tree):
+#     n_nodes = tree.node_count
+#     children_left = tree.children_left
+#     children_right = tree.children_right
+#
+#     def walk(node_id):
+#         if (children_left[node_id] != children_right[node_id]): # decision node
+#             left = walk(children_left[node_id])
+#             right = walk(children_right[node_id])
+#             return DecTreeNode(node_id, left, right)
+#         else:  # leaf
+#             return DecTreeNode(node_id)
+#
+#     root_node_id = 0
+#     return walk(root_node_id)
 
 
 # def dectree_max_depth(tree):
@@ -124,8 +141,7 @@ def dtreeviz(tree, X, y, precision=1, classnames=None, orientation="LR"):
         return '{node_name} [shape=none label=<{label}>]\n'.format(label=html, node_name=node_name)
 
     def prop_size(n):
-        # map to 0.03 to .35
-        margin_range = (0.03, 0.35)
+        margin_range = (0.00, 0.3)
         if sample_count_range>0:
             zero_to_one = (n - min_samples) / sample_count_range
             return zero_to_one * (margin_range[1] - margin_range[0]) + margin_range[0]
@@ -241,7 +257,7 @@ def dtreeviz(tree, X, y, precision=1, classnames=None, orientation="LR"):
                 value = tree.value[i][0]
                 html = """<font face="Helvetica" color="#444443" point-size="11">"""+round(value[0])+"""</font>"""
                 margin = prop_size(node_samples)
-                st += 'leaf{i} [height=0 width="0.4" margin="{margin}" style=filled fillcolor="{color}" shape=circle label=<{label}>]\n'\
+                st += 'leaf{i} [margin="{margin}" style=filled fillcolor="{color}" shape=circle label=<{label}>]\n'\
                     .format(i=i, label=html, name=node_name, color=YELLOW, margin=margin)
 
 
@@ -291,7 +307,101 @@ def iris():
     print(clf.tree_.value)
     return st
 
+
+class ShadowDecTree:
+    """
+    A tree that shadows a decision tree as constructed by scikit-learn's
+    DecisionTree(Regressor|Classifier).  Each node has left and right
+    pointers to child nodes, if any.  As part of build process, the
+    samples considered at each decision node or at each leaf node are
+    saved into field node_samples.
+    """
+    def __init__(self, tree, id, left=None, right=None, node_samples=None):
+        self.tree = tree
+        self.id = id
+        self.left = left
+        self.right = right
+        self.node_samples = node_samples
+
+    def split(self):
+        return self.tree.threshold[self.id]
+
+    def feature(self):
+        return self.tree.feature[self.id]
+
+    def num_samples(self):
+        return self.tree.n_node_samples[self.id] # same as len(self.node_samples)
+
+    def prediction(self):
+        is_classifier = self.tree.n_classes > 1
+        if is_classifier:
+            counts = np.array(tree.value[self.id][0])
+            predicted_class = np.argmax(counts)
+            return predicted_class
+        else:
+            return self.tree.value[self.id][0][0]
+
+    def __str__(self):
+        if self.left is None and self.right is None:
+            return "pred={value},n={n}".format(value=round(self.prediction(),1),n=self.num_samples())
+        else:
+            return "({f}@{s} {left} {right})".format(f=self.feature(),
+                                                     s=round(self.split(),1),
+                                                     left=self.left if self.left is not None else '',
+                                                     right=self.right if self.right is not None else '')
+
+    @staticmethod
+    def get_node_samples(tree_model, data):
+        """
+        Return dictionary mapping node id to list of sample indexes considered by
+        the feature/split decision.
+        """
+        # Doc say: "Return a node indicator matrix where non zero elements
+        #           indicates that the samples goes through the nodes."
+        dec_paths = tree_model.decision_path(data)
+
+        # each sample has path taken down tree
+        node_to_samples = defaultdict(list)
+        for sample_i, dec in enumerate(dec_paths):
+            _, nz_nodes = dec.nonzero()
+            for node_id in nz_nodes:
+                node_to_samples[node_id].append(sample_i)
+
+        return node_to_samples
+
+    @staticmethod
+    def from_model(tree_model):
+        tree = tree_model.tree_
+        children_left = tree.children_left
+        children_right = tree.children_right
+
+        node_to_samples = ShadowDecTree.get_node_samples(regr, data)
+
+        def walk(node_id):
+            if (children_left[node_id] == -1 and children_right[node_id] == -1):  # leaf
+                return ShadowDecTree(tree, node_id, node_samples=node_to_samples[node_id])
+            else:  # decision node
+                left = walk(children_left[node_id])
+                right = walk(children_right[node_id])
+                return ShadowDecTree(tree, node_id, left, right,
+                                     node_samples=node_to_samples[node_id])
+
+        root_node_id = 0
+        return walk(root_node_id)
+
+
+regr = tree.DecisionTreeRegressor(max_depth=5, random_state=666)
+boston = load_boston()
+
+data = pd.DataFrame(boston.data)
+data.columns = boston.feature_names
+
+regr = regr.fit(data, boston.target)
+
+dtree = ShadowDecTree.from_model(regr)
+print(dtree)
+
 # st = iris()
-st = boston()
-print(st)
-graphviz.Source(st).view()
+# st = boston()
+# print(st)
+# graphviz.Source(st).view()
