@@ -1,6 +1,6 @@
 # lolviz
 
-By <a href="http://explained.ai/">Terence Parr</a>. See [Explained.ai](http://explained.ai) for more stuff.
+By <a href="http://explained.ai/">Terence Parr</a>. See [Explained.ai](http://explained.ai) for more stuff. Collaborated with [Prince Grover](https://github.com/groverpr) on the decision tree visualizations.
 
 A simple Python data-structure visualization tool that started out as a **L**ist **O**f **L**ists (lol) visualizer but now handles arbitrary object graphs, including function call stacks! lolviz tries to look out for and format nicely common data structures such as lists, dictionaries, linked lists, and binary trees. This package is primarily for use in teaching and presentations with Jupyter notebooks, but could also be used for debugging data structures. Useful for devoting machine learning data structures, such as decision trees, as well.
 
