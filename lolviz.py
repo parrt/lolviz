@@ -102,15 +102,18 @@ def treeviz(root, leftfield='left', rightfield='right'):
     for p in reachable:
         nodename = "node%d" % id(p)
         fields = []
-        for k, v in p.__dict__.items():
-            if k==leftfield or k==rightfield:
-                continue
-            if isatom(v):
-                fields.append((k, k, v))
-            else:
-                fields.append((k, k, None))
-        s += '// %s TREE node with fields\n' % p.__class__.__name__
-        s += gr_vtree_node(p.__class__.__name__, nodename, fields, separator=None)
+        if hasattr(p,leftfield) or hasattr(p,rightfield):
+            for k, v in p.__dict__.items():
+                if k==leftfield or k==rightfield:
+                    continue
+                if isatom(v):
+                    fields.append((k, k, v))
+                else:
+                    fields.append((k, k, None))
+            s += '// %s TREE node with fields\n' % p.__class__.__name__
+            s += gr_vtree_node(p.__class__.__name__, nodename, fields, separator=None)
+        else:
+            s += obj_node(p)
 
     # s += obj_nodes(reachable)
     s += obj_edges(reachable)
@@ -244,8 +247,9 @@ digraph G {
     if type(o).__module__ == 'numpy': # avoid requiring numpy package unless used
         if type(o).__name__ == 'ndarray':
             return matrixviz(o)
-    if not isinstance(o, dict) and hasattr(o, "__iter__"):
+    if not viz_exists_for_object(o) and hasattr(o, "__iter__"):
         o = list(o)
+
     reachable = closure(o)
 
     s += obj_nodes(reachable)
@@ -336,10 +340,14 @@ def obj_node(p, varnames=None):
         s += 'node%d [margin="0.03", shape=none label=<<font face="Times-Italic" color="#444443" point-size="9">empty set</font>>];\n' % id(p)
     elif p is True or p is False:  # Boolean
         s += 'node%d [margin="0.03", shape=none label=<<font face="Times-Italic" color="#444443" point-size="9">%s</font>>];\n' % (id(p), str(p))
+    elif type(p).__module__ == 'numpy' and type(p).__name__ == 'ndarray':
+        s += gr_ndarray_node('node%d' % id(p), p)
+    elif type(p).__module__ == 'pandas.core.series' and type(p).__name__ == 'Series':
+        s += gr_ndarray_node('node%d' % id(p), p.values)
+    elif type(p).__module__ == 'pandas.core.frame' and type(p).__name__ == 'DataFrame':
+        s += gr_ndarray_node('node%d' % id(p), p.values)
     elif isinstance(p,list) and len(p)==0: # special case "empty list"
         s += 'node%d [margin="0.03", shape=none label=<<font face="Times-Italic" color="#444443" point-size="9">empty list</font>>];\n' % id(p)
-    elif type(p).__module__ == 'numpy' and type(p).__name__ == 'ndarray':
-        s += gr_ndarray_node('node%d'%id(p), p)
     elif hasattr(p, "__iter__") and isatomlist(p) or type(p)==tuple:
         # print "DRAW LIST", p, '@ node' + nodename
         elems = []
@@ -903,6 +911,8 @@ def closure_(p, varnames, visited):
     result = []
     if type(p) != types.FrameType:
         result.append(p)
+
+    # now chase where we can reach
     if type(p) == types.FrameType:
         frame = p
         info = inspect.getframeinfo(frame)
@@ -918,6 +928,10 @@ def closure_(p, varnames, visited):
             result.extend(cl)
     elif type(p).__module__ == 'numpy' and type(p).__name__ == 'ndarray':
         pass # ndarray added already above; don't chase its elements here
+    elif type(p).__module__ == 'pandas.core.series' and type(p).__name__ == 'Series':
+        pass  # pd.Series added already above; don't chase its elements here
+    elif type(p).__module__ == 'pandas.core.frame' and type(p).__name__ == 'DataFrame':
+        pass
     elif type(p)==dict:
         for k,q in p.items():
             cl = closure_(q, varnames, visited)
@@ -967,6 +981,17 @@ def node_edges(p, varnames=None):
             if not isatom(v) and v is not None:
                 edges.append((p, k, v))
     return edges
+
+
+def viz_exists_for_object(p):
+    if type(p) == types.FrameType: return True
+    if isinstance(p,dict): return True
+    elif isinstance(p,set) and len(p) == 0: return True
+    elif p is True or p is False: return True
+    elif type(p).__module__ == 'numpy' and type(p).__name__ == 'ndarray': return True
+    elif type(p).__module__ == 'pandas.core.series' and type(p).__name__ == 'Series': return True
+    elif type(p).__module__ == 'pandas.core.frame' and type(p).__name__ == 'DataFrame': return True
+    return False
 
 
 def connected_subgraphs(reachable, varnames=None):
