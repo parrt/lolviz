@@ -612,12 +612,12 @@ def gr_vlist_html(elems, title=None, bgcolor=YELLOW, showindexes=True, showelems
         for i,e in items:
             index = '<td cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="r" align="right"><font face="Helvetica" color="#444443" point-size="11">%s </font></td>\n' % (bgcolor, i)
 
-            if isatom(e):
+            if isatom(e) or isinstance(e, tuple):
                 if len(str(e)) > prefs.max_str_len:
                     e = abbrev_and_escape(str(e))
                 v = repr(e)
             else:
-                v = "   "
+                v = '&lt;' + e.__class__.__name__ + '&gt;'
             value = '<td port="%s" cellspacing="0" cellpadding="1" bgcolor="%s" border="0" align="center"><font color="#444443" point-size="11"> %s</font></td>\n' % (i, bgcolor, v)
             if showindexes:
                 row = '<tr>' + index + sep + value + '</tr>\n'
