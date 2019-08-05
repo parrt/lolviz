@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='lolviz',
-    version='1.4.2',
+    version='1.4.3',
     url='https://github.com/parrt/lolviz',
     license='BSD',
     py_modules=['lolviz'],
