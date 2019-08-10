@@ -881,7 +881,13 @@ def isatom(p):
         return isatom_(p) or type(p) == unicode # only python 2 distinguishes between str/unicode
 
 
-def isatom_(p): return type(p) == int or type(p) == float or \
+def isatom_(p):
+    if type(p).__module__ == 'numpy':
+        if 'numpy' not in sys.modules:
+            import numpy
+        np = sys.modules['numpy']
+        return np.isscalar(p)
+    return type(p) == int or type(p) == float or \
                        type(p) == str or \
                        p.__class__ == WrapAssoc or \
                        p.__class__ == Ellipsis
