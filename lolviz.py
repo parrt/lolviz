@@ -78,12 +78,17 @@ def listviz(elems, showassoc=True):
     return graphviz.Source(s)
 
 
-def treeviz(root, leftfield='left', rightfield='right'):
+def treeviz(root, childfields=('left', 'right'), show_all_children=True):
     """
     Display a top-down visualization of a binary tree that has
     two fields pointing at the left and right subtrees. The
     type of each node is displayed, all fields, and then
     left/right pointers at the bottom.
+    parameters:
+        root: the root node of the tree
+        child_fields: specified variable name of child node
+        show_all_children: boolean value, only show the child node exists if False, else show all the children fields in
+            parameter child_fields list
     """
     if root is None:
         return
@@ -102,16 +107,21 @@ def treeviz(root, leftfield='left', rightfield='right'):
     for p in reachable:
         nodename = "node%d" % id(p)
         fields = []
-        if hasattr(p,leftfield) or hasattr(p,rightfield):
+        exist_child_fields = [field for field in childfields if hasattr(p, field)]
+        if len(exist_child_fields) >= 1:
             for k, v in p.__dict__.items():
-                if k==leftfield or k==rightfield:
+                if k in childfields:
                     continue
                 if isatom(v):
                     fields.append((k, k, v))
                 else:
                     fields.append((k, k, None))
             s += '// %s TREE node with fields\n' % p.__class__.__name__
-            s += gr_vtree_node(p.__class__.__name__, nodename, fields, separator=None)
+            if show_all_children:
+                s += gr_vtree_node(p.__class__.__name__, nodename, fields, separator=None, childfields=childfields)
+            else:
+                s += gr_vtree_node(p.__class__.__name__, nodename, fields, separator=None, childfields=exist_child_fields)
+
         else:
             s += obj_node(p)
 
@@ -167,7 +177,7 @@ def ndarrayviz(data):
 
 
 def callviz(frame=None, varnames=None):
-    """
+    """z
     Visualize one call stack frame. If frame is None, viz
     caller of callviz()'s frame. Restrict to varnames if
     not None.
@@ -630,37 +640,45 @@ def gr_vlist_html(elems, title=None, bgcolor=YELLOW, showindexes=True, showelems
     return header + blankrow.join(rows) + tail
 
 
-def gr_vtree_node(title, nodename, items, bgcolor=YELLOW, separator=None, leftfield='left', rightfield='right'):
-    html = gr_vtree_html(title, items, bgcolor, separator)
+def gr_vtree_node(title, nodename, items, bgcolor=YELLOW, separator=None, childfields=('left', 'right')):
+    html = gr_vtree_html(title, items, bgcolor, separator, childfields=childfields)
     return '%s [margin="0.03", color="#444443", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="%s", label=<%s>];\n' % (nodename,bgcolor,html)
 
 
-def gr_vtree_html(title, items, bgcolor=YELLOW, separator=None, leftfield='left', rightfield='right'):
+def gr_vtree_html(title, items, bgcolor=YELLOW, separator=None, childfields=('left', 'right')):
     header = '<table BORDER="0" CELLPADDING="0" CELLBORDER="1" CELLSPACING="0">\n'
 
+    # the length of one row, num of child + (num of seperator + 1)
+    colspan = len(childfields)
+    key_colspan, value_colspan = int(len(childfields) / 2), len(childfields) - int(len(childfields) / 2)
     rows = []
     blankrow = '<tr><td colspan="3" cellpadding="1" border="0" bgcolor="%s"></td></tr>' % (bgcolor)
 
     if title is not None:
-        title = '<tr><td cellspacing="0" colspan="3" cellpadding="0" bgcolor="%s" border="1" sides="b" align="center"><font color="#444443" FACE="Times-Italic" point-size="11">%s</font></td></tr>\n' % (bgcolor, title)
+        title = '<tr><td cellspacing="0" colspan="%s" cellpadding="0" bgcolor="%s" border="1" sides="b" align="center"><font color="#444443" FACE="Times-Italic" point-size="11">%s</font></td></tr>\n' % (
+        colspan, bgcolor, title)
         rows.append(title)
 
     if len(items)>0:
         for label,key,value in items:
             font = "Helvetica"
             if separator is not None:
-                name = '<td port="%s_label" cellspacing="0" cellpadding="0" bgcolor="%s" border="0" align="right"><font face="%s" color="#444443" point-size="11">%s </font></td>\n' % (label, bgcolor, font, key)
+                name = '<td port="%s_label" colspan="%s"  cellspacing="0" cellpadding="0" bgcolor="%s" border="0" align="right"><font face="%s" color="#444443" point-size="11">%s </font></td>\n' % (
+                 label, key_colspan, bgcolor, font, key)
                 sep = '<td cellpadding="0" border="0" valign="bottom"><font color="#444443" point-size="9">%s</font></td>' % separator
             else:
-                name = '<td port="%s_label" cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="r" align="right"><font face="%s" color="#444443" point-size="11">%s </font></td>\n' % (label, bgcolor, font, key)
+                name = '<td port="%s_label" colspan="%s" cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="r" align="right"><font face="%s" color="#444443" point-size="11">%s </font></td>\n' % (
+                 label, key_colspan, bgcolor, font, key)
                 sep = '<td cellspacing="0" cellpadding="0" border="0"></td>'
+                sep = ""  # reduce the sep here is better for display
 
             if value is not None:
                 v = abbrev_and_escape(str(value))
                 v = repr(v)
             else:
                 v = "   "
-            value = '<td port="%s" cellspacing="0" cellpadding="1" bgcolor="%s" border="0" align="left"><font color="#444443" point-size="11"> %s</font></td>\n' % (label, bgcolor, v)
+            value = '<td port="%s" colspan="%s" cellspacing="0" cellpadding="1" bgcolor="%s" border="0" align="left"><font color="#444443" point-size="11"> %s</font></td>\n' % (
+            label, value_colspan, bgcolor, v)
             row = '<tr>' + name + sep + value + '</tr>\n'
             rows.append(row)
     else:
@@ -670,42 +688,62 @@ def gr_vtree_html(title, items, bgcolor=YELLOW, separator=None, leftfield='left'
         sep = '<td cellpadding="0" bgcolor="%s" border="0" valign="bottom"><font color="#444443" point-size="15">%s</font></td>' % (bgcolor,separator)
     else:
         sep = '<td cellspacing="0" cellpadding="0" bgcolor="%s" border="0"></td>' % bgcolor
+        sep = '' # ignore the sep here for beauty
 
     kidsep = """
-    <tr><td colspan="3" cellpadding="0" border="1" sides="b" height="3"></td></tr>
-    """ + blankrow
+    <tr><td colspan="%s" cellpadding="0" border="1" sides="b" height="3"></td></tr>
+    """ % colspan + blankrow
 
-    kidnames = """
-    <tr>
-    <td cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="1" sides="r" align="left"><font color="#444443" point-size="6">%s</font></td>
-    %s
-    <td cellspacing="0" cellpadding="1" bgcolor="$bgcolor$" border="0" align="right"><font color="#444443" point-size="6">%s</font></td>
+    kidnames = ["""
+        <tr>
+    <td cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="1" sides="r" align="center"><font color="#444443" point-size="6">%s</font></td>
+    """ % (childfields[0])]
+    if len(childfields) >= 3:  # generate the child names in the mid
+        for childfield in childfields[1:-1]:
+            kidname = """    
+            <td cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="1" sides="r" align="center"><font color="#444443" point-size="6">%s</font></td>
+            """ % (childfield)
+            kidnames.append(kidname)
+    right_name = """
+      <td cellspacing="0" cellpadding="1" bgcolor="$bgcolor$" border="0" align="center"><font color="#444443" point-size="6">%s</font></td>
     </tr>
-    """ % (leftfield, sep, rightfield)
+    """ % (childfields[-1])
+    kidnames.append(right_name)
+    kidnames = sep.join(kidnames)
 
-    kidptrs = """
-    <tr>
-    <td port="%s" cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="1" sides="r"><font color="#444443" point-size="1"> </font></td>
-    %s
-    <td port="%s" cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="0"><font color="#444443" point-size="1"> </font></td>
-    </tr>
-    """ % (leftfield, sep, rightfield)
+    kidptrs = "<tr>"
+    bottomseps = "<tr>"
+    for childfield in childfields[:-1]:
+        kidptr = """
+            <td port="%s" cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="1" sides="r"><font color="#444443" point-size="1"> </font></td>
+            %s
+            """ % (childfield, sep)
+        kidptrs += kidptr
 
-    bottomsep = """
-    <tr>
-    <td cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="1" sides="r"><font color="#444443" point-size="3"> </font></td>
-    %s
-    <td cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="0"><font color="#444443" point-size="3"> </font></td>
+        bottomsep = """
+                <td cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="1" sides="r"><font color="#444443" point-size="3"> </font></td>
+            %s
+            """ % (sep)
+        bottomseps += bottomsep
+    right_kidptr = """
+            <td port="%s" cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="0"><font color="#444443" point-size="1"> </font></td>
+        </tr>
+        """ % (childfields[-1])
+    kidptrs += right_kidptr
+
+    right_bottomsep = """
+        <td cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="0"><font color="#444443" point-size="3"> </font></td>
     </tr>
-    """ % sep
+    """
+    bottomseps += right_bottomsep
 
     kidsep = kidsep.replace('$bgcolor$', bgcolor)
     kidnames = kidnames.replace('$bgcolor$', bgcolor)
     kidptrs = kidptrs.replace('$bgcolor$', bgcolor)
-    bottomsep = bottomsep.replace('$bgcolor$', bgcolor)
+    bottomseps = bottomseps.replace('$bgcolor$', bgcolor)
 
     tail = "</table>\n"
-    return header + blankrow.join(rows) + kidsep + kidnames + kidptrs + bottomsep + tail
+    return header + blankrow.join(rows) + kidsep + kidnames + kidptrs + bottomseps + tail
 
 
 def string_node(s):
