@@ -78,12 +78,17 @@ def listviz(elems, showassoc=True):
     return graphviz.Source(s)
 
 
-def treeviz(root, leftfield='left', rightfield='right'):
+def treeviz(root, childfields=('left', 'right'), show_all_children=True):
     """
     Display a top-down visualization of a binary tree that has
     two fields pointing at the left and right subtrees. The
     type of each node is displayed, all fields, and then
     left/right pointers at the bottom.
+    parameters:
+        root: the root node of the tree
+        child_fields: specified variable name of child node
+        show_all_children: boolean value, only show the child node exists if False, else show all the children fields in
+            parameter child_fields list
     """
     if root is None:
         return
@@ -98,29 +103,87 @@ def treeviz(root, leftfield='left', rightfield='right'):
     """
 
     reachable = closure(root)
-
     for p in reachable:
         nodename = "node%d" % id(p)
         fields = []
-        if hasattr(p,leftfield) or hasattr(p,rightfield):
+        exist_child_fields = [field for field in childfields if hasattr(p, field)]
+        if len(exist_child_fields) >= 1:
             for k, v in p.__dict__.items():
-                if k==leftfield or k==rightfield:
+                if k in childfields:
                     continue
                 if isatom(v):
                     fields.append((k, k, v))
                 else:
                     fields.append((k, k, None))
             s += '// %s TREE node with fields\n' % p.__class__.__name__
-            s += gr_vtree_node(p.__class__.__name__, nodename, fields, separator=None)
+            if show_all_children:
+                s += gr_vtree_node(p.__class__.__name__, nodename, fields, separator=None,
+                                   childfields=childfields)
+            else:
+                s += gr_vtree_node(p.__class__.__name__, nodename, fields, separator=None,
+                                   childfields=exist_child_fields)
         else:
             s += obj_node(p)
 
     # s += obj_nodes(reachable)
     s += obj_edges(reachable)
-
     s += "}\n"
     return graphviz.Source(s)
 
+
+def treeplusviz(root, childrenfield="children"):
+    """
+    Display a top-down visualization of a tree just like function treeviz()
+    The only difference is that it support more than binary tree.
+    you can use a specified dictionary(default field "children" of Tree Object) to save all the children
+    e.g.
+    class Tree:
+        def __init__(self, value, **children):
+            self.value = value
+            self.children = children
+    root = Tree("mary", left=1, right=2)
+    treeplusviz(root, childrenfield="children")
+    """
+    if root is None:
+        return
+
+    s = """
+    digraph G {
+        nodesep=.1;
+        ranksep=.3;
+        rankdir=TD;
+        node [penwidth="0.5", shape=box, width=.1, height=.1];
+
+    """
+
+    reachable = closure(root)
+    children_reachable = {}  # reachable children dict, use to create edges separately
+    for p in reachable:
+        nodename = "node%d" % id(p)
+        fields = []
+        dict_children_fields = []  # store the keys of children dict, regard each key,value as a child
+        if hasattr(p, childrenfield):
+            for k, v in p.__dict__.items():
+                if k == childrenfield  and isinstance(v, dict):
+                    dict_children_fields += v.keys()
+                    children_reachable[id(v)] = (p, v)
+                elif isatom(v):
+                    fields.append((k, k, v))
+                else:
+                    fields.append((k, k, None))
+            s += '// %s TREE node with fields\n' % p.__class__.__name__
+            s += gr_vtree_node(p.__class__.__name__, nodename, fields, separator=None,
+                               childfields=dict_children_fields)
+        # do not visualize children dict nodes, they have been extracted as children of parent tree.
+        elif id(p) in children_reachable:
+            pass
+        else:
+            s += obj_node(p)
+
+    s += obj_edges(reachable, neglect_nodes=[q for (p, q) in children_reachable.values()])
+    s += children_edges(children_reachable.values())
+    s += "}\n"
+    return graphviz.Source(s)
 
 def lolviz(table, showassoc=True):
     """
@@ -393,17 +456,35 @@ def obj_node(p, varnames=None):
     return s
 
 
-def obj_edges(nodes, varnames=None):
+def obj_edges(nodes, varnames=None, neglect_nodes=()):
+    """
+    create all possible edges reachable from `nodes`, neglect edges related to nodes in `neglect_nodes`
+    """
     s = ""
     es = edges(nodes, varnames)
     for (p, label, q) in es:
-        if type(p) != types.FrameType and type(p) != dict and type(p) != tuple and hasattr(p,"__iter__") and not isatomlist(p):  # edges start at right edge not center for vertical lists
+        if q in neglect_nodes or p in neglect_nodes:
+            pass
+        elif type(p) != types.FrameType and type(p) != dict and type(p) != tuple and hasattr(p,"__iter__") and not isatomlist(p):  # edges start at right edge not center for vertical lists
             s += 'node%d:%s -> node%d:w [arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4, weight=100]\n' % (id(p), label, id(q))
         else:
             s += 'node%d:%s:c -> node%d [dir=both, tailclip=false, arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (id(p), label, id(q))
 
     return s
 
+
+def children_edges(children_reachable_pairs):
+    """
+    Given a list of pairs like (parent, children), each children should be a dictionary type value
+    create edges from parent.children.key -> children.value
+    return string
+    """
+    s = ""
+    for parent, children_dict in children_reachable_pairs:
+        for key, value in children_dict.items():
+            if not isatom(value):
+                s += 'node%d:%s:c -> node%d [dir=both, tailclip=false, arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (id(parent), key, id(value))
+    return s
 
 def elviz(el, showassoc):
     if el is None:
@@ -630,37 +711,46 @@ def gr_vlist_html(elems, title=None, bgcolor=YELLOW, showindexes=True, showelems
     return header + blankrow.join(rows) + tail
 
 
-def gr_vtree_node(title, nodename, items, bgcolor=YELLOW, separator=None, leftfield='left', rightfield='right'):
-    html = gr_vtree_html(title, items, bgcolor, separator)
+def gr_vtree_node(title, nodename, items, bgcolor=YELLOW, separator=None, childfields=('left', 'right')):
+    # remove duplicates
+    html = gr_vtree_html(title, items, bgcolor, separator, childfields=childfields)
     return '%s [margin="0.03", color="#444443", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="%s", label=<%s>];\n' % (nodename,bgcolor,html)
 
 
-def gr_vtree_html(title, items, bgcolor=YELLOW, separator=None, leftfield='left', rightfield='right'):
+def gr_vtree_html(title, items, bgcolor=YELLOW, separator=None, childfields=('left', 'right')):
     header = '<table BORDER="0" CELLPADDING="0" CELLBORDER="1" CELLSPACING="0">\n'
 
+    # the length of one row, num of child + (num of seperator + 1)
+    colspan = max(len(childfields), 2)
+    key_colspan, value_colspan = int(colspan / 2), colspan - int(colspan / 2)
     rows = []
     blankrow = '<tr><td colspan="3" cellpadding="1" border="0" bgcolor="%s"></td></tr>' % (bgcolor)
 
     if title is not None:
-        title = '<tr><td cellspacing="0" colspan="3" cellpadding="0" bgcolor="%s" border="1" sides="b" align="center"><font color="#444443" FACE="Times-Italic" point-size="11">%s</font></td></tr>\n' % (bgcolor, title)
+        title = '<tr><td cellspacing="0" colspan="%s" cellpadding="0" bgcolor="%s" border="1" sides="b" align="center"><font color="#444443" FACE="Times-Italic" point-size="11">%s</font></td></tr>\n' % (
+        colspan, bgcolor, title)
         rows.append(title)
 
     if len(items)>0:
         for label,key,value in items:
             font = "Helvetica"
             if separator is not None:
-                name = '<td port="%s_label" cellspacing="0" cellpadding="0" bgcolor="%s" border="0" align="right"><font face="%s" color="#444443" point-size="11">%s </font></td>\n' % (label, bgcolor, font, key)
+                name = '<td port="%s_label" colspan="%s"  cellspacing="0" cellpadding="0" bgcolor="%s" border="0" align="right"><font face="%s" color="#444443" point-size="11">%s </font></td>\n' % (
+                 label, key_colspan, bgcolor, font, key)
                 sep = '<td cellpadding="0" border="0" valign="bottom"><font color="#444443" point-size="9">%s</font></td>' % separator
             else:
-                name = '<td port="%s_label" cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="r" align="right"><font face="%s" color="#444443" point-size="11">%s </font></td>\n' % (label, bgcolor, font, key)
+                name = '<td port="%s_label" colspan="%s" cellspacing="0" cellpadding="0" bgcolor="%s" border="1" sides="r" align="right"><font face="%s" color="#444443" point-size="11">%s </font></td>\n' % (
+                 label, key_colspan, bgcolor, font, key)
                 sep = '<td cellspacing="0" cellpadding="0" border="0"></td>'
+                sep = ""  # reduce the sep here is better for display
 
             if value is not None:
                 v = abbrev_and_escape(str(value))
                 v = repr(v)
             else:
                 v = "   "
-            value = '<td port="%s" cellspacing="0" cellpadding="1" bgcolor="%s" border="0" align="left"><font color="#444443" point-size="11"> %s</font></td>\n' % (label, bgcolor, v)
+            value = '<td port="%s" colspan="%s" cellspacing="0" cellpadding="1" bgcolor="%s" border="0" align="left"><font color="#444443" point-size="11"> %s</font></td>\n' % (
+            label, value_colspan, bgcolor, v)
             row = '<tr>' + name + sep + value + '</tr>\n'
             rows.append(row)
     else:
@@ -670,42 +760,62 @@ def gr_vtree_html(title, items, bgcolor=YELLOW, separator=None, leftfield='left'
         sep = '<td cellpadding="0" bgcolor="%s" border="0" valign="bottom"><font color="#444443" point-size="15">%s</font></td>' % (bgcolor,separator)
     else:
         sep = '<td cellspacing="0" cellpadding="0" bgcolor="%s" border="0"></td>' % bgcolor
+        sep = '' # ignore the sep here for beauty
 
     kidsep = """
-    <tr><td colspan="3" cellpadding="0" border="1" sides="b" height="3"></td></tr>
-    """ + blankrow
+    <tr><td colspan="%s" cellpadding="0" border="1" sides="b" height="3"></td></tr>
+    """ % colspan + blankrow
 
-    kidnames = """
-    <tr>
-    <td cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="1" sides="r" align="left"><font color="#444443" point-size="6">%s</font></td>
-    %s
-    <td cellspacing="0" cellpadding="1" bgcolor="$bgcolor$" border="0" align="right"><font color="#444443" point-size="6">%s</font></td>
-    </tr>
-    """ % (leftfield, sep, rightfield)
+    kidnames = ["""
+        <tr>
+    <td cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="1" sides="r" align="center"><font color="#444443" point-size="6">%s</font></td>
+    """ % (childfields[0])]
+    if len(childfields) >= 3:  # generate the child names in the mid
+        for childfield in childfields[1:-1]:
+            kidname = """    
+            <td cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="1" sides="r" align="center"><font color="#444443" point-size="6">%s</font></td>
+            """ % (childfield)
+            kidnames.append(kidname)
+    if len(childfields) >= 2:
+        right_name = """
+          <td cellspacing="0" cellpadding="1" bgcolor="$bgcolor$" border="0" align="center"><font color="#444443" point-size="6">%s</font></td>
+        """ % (childfields[-1])
+        kidnames.append(right_name)
+    kidnames = sep.join(kidnames) + "</tr>"
 
-    kidptrs = """
-    <tr>
-    <td port="%s" cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="1" sides="r"><font color="#444443" point-size="1"> </font></td>
-    %s
-    <td port="%s" cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="0"><font color="#444443" point-size="1"> </font></td>
-    </tr>
-    """ % (leftfield, sep, rightfield)
+    kidptrs = "<tr>"
+    bottomseps = "<tr>"
+    for childfield in childfields[:-1]:
+        kidptr = """
+            <td port="%s" cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="1" sides="r"><font color="#444443" point-size="1"> </font></td>
+            %s
+            """ % (childfield, sep)
+        kidptrs += kidptr
 
-    bottomsep = """
-    <tr>
-    <td cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="1" sides="r"><font color="#444443" point-size="3"> </font></td>
-    %s
-    <td cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="0"><font color="#444443" point-size="3"> </font></td>
+        bottomsep = """
+                <td cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="1" sides="r"><font color="#444443" point-size="3"> </font></td>
+            %s
+            """ % (sep)
+        bottomseps += bottomsep
+    right_kidptr = """
+            <td port="%s" cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="0"><font color="#444443" point-size="1"> </font></td>
+        </tr>
+        """ % (childfields[-1]) 
+    kidptrs += right_kidptr
+
+    right_bottomsep = """
+        <td cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="0"><font color="#444443" point-size="3"> </font></td>
     </tr>
-    """ % sep
+    """
+    bottomseps += right_bottomsep
 
     kidsep = kidsep.replace('$bgcolor$', bgcolor)
     kidnames = kidnames.replace('$bgcolor$', bgcolor)
     kidptrs = kidptrs.replace('$bgcolor$', bgcolor)
-    bottomsep = bottomsep.replace('$bgcolor$', bgcolor)
+    bottomseps = bottomseps.replace('$bgcolor$', bgcolor)
 
     tail = "</table>\n"
-    return header + blankrow.join(rows) + kidsep + kidnames + kidptrs + bottomsep + tail
+    return header + blankrow.join(rows) + kidsep + kidnames + kidptrs + bottomseps + tail
 
 
 def string_node(s):
@@ -957,7 +1067,7 @@ def edges(reachable, varnames=None):
     """Return list of (p, port-in-p, q) for all p in reachable node list"""
     edges = []
     for p in reachable:
-        edges.extend( node_edges(p, varnames) )
+        edges.extend(node_edges (p, varnames) )
     return edges
 
 
