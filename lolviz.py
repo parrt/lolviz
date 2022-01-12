@@ -103,7 +103,6 @@ def treeviz(root, childfields=('left', 'right'), show_all_children=True):
     """
 
     reachable = closure(root)
-
     for p in reachable:
         nodename = "node%d" % id(p)
         fields = []
@@ -118,19 +117,65 @@ def treeviz(root, childfields=('left', 'right'), show_all_children=True):
                     fields.append((k, k, None))
             s += '// %s TREE node with fields\n' % p.__class__.__name__
             if show_all_children:
-                s += gr_vtree_node(p.__class__.__name__, nodename, fields, separator=None, childfields=childfields)
+                s += gr_vtree_node(p.__class__.__name__, nodename, fields, separator=None,
+                                   childfields=childfields)
             else:
-                s += gr_vtree_node(p.__class__.__name__, nodename, fields, separator=None, childfields=exist_child_fields)
-
+                s += gr_vtree_node(p.__class__.__name__, nodename, fields, separator=None,
+                                   childfields=exist_child_fields)
         else:
             s += obj_node(p)
 
     # s += obj_nodes(reachable)
     s += obj_edges(reachable)
-
     s += "}\n"
     return graphviz.Source(s)
 
+def treeplusviz(root, childrenfield="children"):
+    """
+    Display a top-down visualization of a tree just like function treeviz()
+    The only difference is that it support more than binary tree.
+    It support a specified field(default "children") which contains all the children to visualize 
+    """
+    if root is None:
+        return
+
+    s = """
+    digraph G {
+        nodesep=.1;
+        ranksep=.3;
+        rankdir=TD;
+        node [penwidth="0.5", shape=box, width=.1, height=.1];
+
+    """
+
+    reachable = closure(root)
+    children_reachable = {}  # reachable children dict, use to create edges separately
+    for p in reachable:
+        nodename = "node%d" % id(p)
+        fields = []
+        dict_children_fields = []  # store the keys of children dict, regard each key,value as a child
+        if hasattr(p, childrenfield):
+            for k, v in p.__dict__.items():
+                if k == childrenfield  and isinstance(v, dict):
+                    dict_children_fields += v.keys()
+                    children_reachable[id(v)] = (p, v)
+                elif isatom(v):
+                    fields.append((k, k, v))
+                else:
+                    fields.append((k, k, None))
+            s += '// %s TREE node with fields\n' % p.__class__.__name__
+            s += gr_vtree_node(p.__class__.__name__, nodename, fields, separator=None,
+                               childfields=dict_children_fields)
+        # do not visualize children dict nodes, they have been extracted as children of parent tree.
+        elif id(p) in children_reachable:
+            pass
+        else:
+            s += obj_node(p)
+
+    s += obj_edges(reachable, neglect_fields=[q for (p, q) in children_reachable.values()])
+    s += children_edges(children_reachable.values())
+    s += "}\n"
+    return graphviz.Source(s)
 
 def lolviz(table, showassoc=True):
     """
@@ -403,17 +448,35 @@ def obj_node(p, varnames=None):
     return s
 
 
-def obj_edges(nodes, varnames=None):
+def obj_edges(nodes, varnames=None, neglect_fields=()):
+    """
+    create all possible edges reachable from `nodes`, neglect nodes in `neglect_fields`
+    """
     s = ""
     es = edges(nodes, varnames)
     for (p, label, q) in es:
-        if type(p) != types.FrameType and type(p) != dict and type(p) != tuple and hasattr(p,"__iter__") and not isatomlist(p):  # edges start at right edge not center for vertical lists
+        if q in neglect_fields or p in neglect_fields:
+            pass
+        elif type(p) != types.FrameType and type(p) != dict and type(p) != tuple and hasattr(p,"__iter__") and not isatomlist(p):  # edges start at right edge not center for vertical lists
             s += 'node%d:%s -> node%d:w [arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4, weight=100]\n' % (id(p), label, id(q))
         else:
             s += 'node%d:%s:c -> node%d [dir=both, tailclip=false, arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (id(p), label, id(q))
 
     return s
 
+
+def children_edges(children_reachable_pairs):
+    """
+    Given a list of pairs like (parent, children), each children should be a dictionary type value
+    create edges from parent.children.key -> children.value
+    return string
+    """
+    s = ""
+    for parent, children_dict in children_reachable_pairs:
+        for key, value in children_dict.items():
+            if not isatom(value):
+                s += 'node%d:%s:c -> node%d [dir=both, tailclip=false, arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4]\n' % (id(parent), key, id(value))
+    return s
 
 def elviz(el, showassoc):
     if el is None:
@@ -641,6 +704,7 @@ def gr_vlist_html(elems, title=None, bgcolor=YELLOW, showindexes=True, showelems
 
 
 def gr_vtree_node(title, nodename, items, bgcolor=YELLOW, separator=None, childfields=('left', 'right')):
+    # remove duplicates
     html = gr_vtree_html(title, items, bgcolor, separator, childfields=childfields)
     return '%s [margin="0.03", color="#444443", fontcolor="#444443", fontname="Helvetica", style=filled, fillcolor="%s", label=<%s>];\n' % (nodename,bgcolor,html)
 
@@ -649,8 +713,8 @@ def gr_vtree_html(title, items, bgcolor=YELLOW, separator=None, childfields=('le
     header = '<table BORDER="0" CELLPADDING="0" CELLBORDER="1" CELLSPACING="0">\n'
 
     # the length of one row, num of child + (num of seperator + 1)
-    colspan = len(childfields)
-    key_colspan, value_colspan = int(len(childfields) / 2), len(childfields) - int(len(childfields) / 2)
+    colspan = max(len(childfields), 2)
+    key_colspan, value_colspan = int(colspan / 2), colspan - int(colspan / 2)
     rows = []
     blankrow = '<tr><td colspan="3" cellpadding="1" border="0" bgcolor="%s"></td></tr>' % (bgcolor)
 
@@ -704,12 +768,12 @@ def gr_vtree_html(title, items, bgcolor=YELLOW, separator=None, childfields=('le
             <td cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="1" sides="r" align="center"><font color="#444443" point-size="6">%s</font></td>
             """ % (childfield)
             kidnames.append(kidname)
-    right_name = """
-      <td cellspacing="0" cellpadding="1" bgcolor="$bgcolor$" border="0" align="center"><font color="#444443" point-size="6">%s</font></td>
-    </tr>
-    """ % (childfields[-1])
-    kidnames.append(right_name)
-    kidnames = sep.join(kidnames)
+    if len(childfields) >= 2:
+        right_name = """
+          <td cellspacing="0" cellpadding="1" bgcolor="$bgcolor$" border="0" align="center"><font color="#444443" point-size="6">%s</font></td>
+        """ % (childfields[-1])
+        kidnames.append(right_name)
+    kidnames = sep.join(kidnames) + "</tr>"
 
     kidptrs = "<tr>"
     bottomseps = "<tr>"
@@ -728,7 +792,7 @@ def gr_vtree_html(title, items, bgcolor=YELLOW, separator=None, childfields=('le
     right_kidptr = """
             <td port="%s" cellspacing="0" cellpadding="0" bgcolor="$bgcolor$" border="0"><font color="#444443" point-size="1"> </font></td>
         </tr>
-        """ % (childfields[-1])
+        """ % (childfields[-1]) 
     kidptrs += right_kidptr
 
     right_bottomsep = """
@@ -995,7 +1059,7 @@ def edges(reachable, varnames=None):
     """Return list of (p, port-in-p, q) for all p in reachable node list"""
     edges = []
     for p in reachable:
-        edges.extend( node_edges(p, varnames) )
+        edges.extend(node_edges (p, varnames) )
     return edges
 
 
