@@ -130,11 +130,19 @@ def treeviz(root, childfields=('left', 'right'), show_all_children=True):
     s += "}\n"
     return graphviz.Source(s)
 
+
 def treeplusviz(root, childrenfield="children"):
     """
     Display a top-down visualization of a tree just like function treeviz()
     The only difference is that it support more than binary tree.
-    It support a specified field(default "children") which contains all the children to visualize 
+    you can use a specified dictionary(default field "children" of Tree Object) to save all the children
+    e.g.
+    class Tree:
+        def __init__(self, value, **children):
+            self.value = value
+            self.children = children
+    root = Tree("mary", left=1, right=2)
+    treeplusviz(root, childrenfield="children")
     """
     if root is None:
         return
@@ -172,7 +180,7 @@ def treeplusviz(root, childrenfield="children"):
         else:
             s += obj_node(p)
 
-    s += obj_edges(reachable, neglect_fields=[q for (p, q) in children_reachable.values()])
+    s += obj_edges(reachable, neglect_nodes=[q for (p, q) in children_reachable.values()])
     s += children_edges(children_reachable.values())
     s += "}\n"
     return graphviz.Source(s)
@@ -222,7 +230,7 @@ def ndarrayviz(data):
 
 
 def callviz(frame=None, varnames=None):
-    """z
+    """
     Visualize one call stack frame. If frame is None, viz
     caller of callviz()'s frame. Restrict to varnames if
     not None.
@@ -448,14 +456,14 @@ def obj_node(p, varnames=None):
     return s
 
 
-def obj_edges(nodes, varnames=None, neglect_fields=()):
+def obj_edges(nodes, varnames=None, neglect_nodes=()):
     """
-    create all possible edges reachable from `nodes`, neglect nodes in `neglect_fields`
+    create all possible edges reachable from `nodes`, neglect edges related to nodes in `neglect_nodes`
     """
     s = ""
     es = edges(nodes, varnames)
     for (p, label, q) in es:
-        if q in neglect_fields or p in neglect_fields:
+        if q in neglect_nodes or p in neglect_nodes:
             pass
         elif type(p) != types.FrameType and type(p) != dict and type(p) != tuple and hasattr(p,"__iter__") and not isatomlist(p):  # edges start at right edge not center for vertical lists
             s += 'node%d:%s -> node%d:w [arrowtail=dot, penwidth="0.5", color="#444443", arrowsize=.4, weight=100]\n' % (id(p), label, id(q))
